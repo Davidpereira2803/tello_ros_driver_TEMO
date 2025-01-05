@@ -5,6 +5,10 @@ from pynput import keyboard
 from tello_msgs.msg import FlipControl
 from std_msgs.msg import Empty
 from geometry_msgs.msg import Twist
+from std_msgs.msg import String
+
+import time
+
 
 
 class Controller(Node):
@@ -29,6 +33,56 @@ class Controller(Node):
         )
         self.shift_key_pressed = False
         self.shutdown = False
+
+        # Emotion subscriber
+        self.emotion_sub = self.create_subscription(
+            String,
+            'detected_emotion',
+            self.emotion_callback,
+            10
+        )
+
+        self.latest_emotion = None
+        self.notperformed = True
+        self.emotionactive = False
+
+        self.happyperforming = False
+        self.sadperforming = False
+        self.angryperforming = False
+        self.surprisedperforming = False
+        self.fearperforming = False
+        self.disgustperforming = False
+
+        # Happy
+        self.happyperf = False
+        self.happyclean = False
+
+        # Sad
+        self.sadperf = False
+        self.sadclean = False
+
+        # Angry
+        self.angryperf = False
+        self.angryclean = False
+        self.angryperf2 = False
+        self.count = 0
+
+        # Surprised
+        self.surprisedperf = False
+        self.surprisedclean = False
+        self.surprisedperf2 = False
+
+        # Fear
+        self.fearperf = False
+        self.fearclean = False
+
+        # Disgust
+        self.disgustperf = False
+        self.digustperf = False
+
+
+        self.calltime = 1.5
+        self.timer = self.create_timer(self.calltime, self.emotion_reactions)  
 
     def print_controls(self):
         print("---------------------")
@@ -87,9 +141,276 @@ class Controller(Node):
             FlipControl, self.tello_flip_control_topic_name, 1
         )
 
+    def emotion_callback(self, msg):
+        """Callback for emotion updates."""
+        self.latest_emotion = msg.data  
+    
+    def emotion_reactions(self):
+        """Function to perfrom the emotion related reactions"""
+        if self.latest_emotion:
+            self.get_logger().info(f"Latest Emotion: {self.latest_emotion}")
+
+            if self.emotionactive:
+
+                # Happy
+                if self.happyperforming or (self.notperformed and (self.latest_emotion == "Happy")):
+                    self.get_logger().info("Happy Front FLip!")
+                    msg = FlipControl()
+                    msg.flip_forward = False
+                    msg.flip_backward = True
+                    msg.flip_left = False
+                    msg.flip_right = False
+                    self._flip_control_pub.publish(msg)
+                    self.notperformed = False
+                    self.happyclean = True
+                    self.happyperforming = False
+
+                    return
+
+                if self.happyclean:
+                    msg = FlipControl()
+                    msg.flip_forward = False
+                    msg.flip_backward = False
+                    msg.flip_left = False
+                    msg.flip_right = False
+                    msg.flip_forward_left = False
+                    msg.flip_forward_right = False
+                    msg.flip_back_left = False
+                    msg.flip_back_right = False
+                    self._flip_control_pub.publish(msg)
+                    self.get_logger().info("Happy Clean!")
+                    self.happyclean = False
+                    self.happyperf = True
+                    return
+
+                if self.happyperf:
+                    msg = FlipControl()
+                    msg.flip_forward = True
+                    msg.flip_backward = False
+                    msg.flip_left = False
+                    msg.flip_right = False
+                    self._flip_control_pub.publish(msg)
+                    self.happyperf = False
+                    self.get_logger().info("Happy Back Flip!")
+
+                # Angry
+                if  self.angryperforming or (self.notperformed and (self.latest_emotion == "Angry")):
+
+                    self.key_pressed["th"] = -self.speed
+                    
+
+                    self.get_logger().info("Angry Movement 1!")
+                    self.notperformed = False
+                    self.angryclean = True
+                    self.angryperforming = False
+
+                    return
+
+                if self.angryclean:
+                    
+                    self.key_pressed["th"] = 0.0
+
+                    self.get_logger().info("Angry Clean!")
+                    self.angryclean = False
+                    self.angryperf = True
+                    return
+
+                if self.angryperf and self.count < 4:
+                    self.count += 1
+                    self.key_pressed["cw"] = self.speed
+
+                    self.angryperf2 = True
+                    self.get_logger().info("Angry Movement 2!")
+                    return
+                elif self.angryperf:
+                    self.key_pressed["cw"] = 0.0
+                    self.count = 0
+                    self.angryperf = False
+
+                if self.angryperf2:
+
+                    self.key_pressed["forward"] = self.speed
+
+                    self.angryperf2 = False
+                    self.get_logger().info("Angry Movement 3!")
+                    return 
+
+                self.key_pressed["forward"] = 0.0
+
+                # Sad
+                if self.sadperforming or (self.notperformed and (self.latest_emotion == "Sad")):
+
+                    self.key_pressed["forward"] = -self.speed
+                    
+
+                    self.get_logger().info("Sad Movement 1!")
+                    self.notperformed = False
+                    self.sadclean = True
+                    self.sadperforming = False
+
+                    return
+
+                if self.sadclean:
+                    
+                    self.key_pressed["forward"] = 0.0
+
+                    self.get_logger().info("Sad Clean!")
+                    self.sadclean = False
+                    self.sadperf = True
+                    return
+
+                if self.sadperf and self.count < 4:
+                    self.count += 1
+                    self.key_pressed["cw"] = self.speed
+
+                    self.get_logger().info("Sad Movement 2!")
+                    return
+                elif self.sadperf:
+                    self.key_pressed["cw"] = 0.0
+                    self.count = 0
+                    self.sadperf = False
+                
+                # Surprised
+                if self.surprisedperforming or (self.notperformed and (self.latest_emotion == "Surprise")):
+
+                    self.key_pressed["th"] = self.speed
+
+                    self.get_logger().info("Surprised Movement 1!")
+                    self.notperformed = False
+                    self.surprisedclean = True
+                    self.surprisedperforming = False
+
+                    return
+
+                if self.surprisedclean:
+                    
+                    self.key_pressed["th"] = 0.0
+
+                    self.get_logger().info("Surprised Clean!")
+                    self.surprisedclean = False
+                    if not self.surprisedperf2:
+                        self.surprisedperf = True
+                    self.surprisedperf2 = False
+
+                    return
+
+                if self.surprisedperf and self.count < 3:
+                    self.count += 1
+                    self.key_pressed["cw"] = self.speed * 2
+
+                    self.get_logger().info("Surprised Movement 2!")
+
+                    return
+                elif self.surprisedperf:
+                    self.key_pressed["cw"] = 0.0
+                    self.count = 0
+                    self.surprisedperf = False
+                    self.surprisedperf2 = True
+
+                    return
+
+                if self.surprisedperf2:
+
+                    self.key_pressed["th"] = -self.speed
+
+                    self.get_logger().info("Surprised Movement 3!")
+                    self.surprisedclean = True
+
+                    return
+
+                # Fear
+                if self.fearperforming or (self.notperformed and (self.latest_emotion == "Fear")):
+
+                    self.key_pressed["forward"] = -self.speed
+
+                    for i in range(10):
+                        self.key_pressed["right"] = self.speed
+
+                    for i in range(10):
+                        self.key_pressed["right"] = -self.speed
+
+                    self.get_logger().info("Fear Movement 1!")
+                    self.notperformed = False
+                    self.fearclean = True
+                    self.fearperforming = False
+
+                    return
+                
+                if self.fearclean:
+                    
+                    self.key_pressed["forward"] = 0.0
+
+                    self.key_pressed["right"] = 0.0
+
+                    self.get_logger().info("Surprised Clean!")
+                    self.surprisedclean = False
+
+                    return
+
+
+                # Disgust
+                if self.disgustperforming or (self.notperformed and (self.latest_emotion == "Disgust")):
+
+                    self.key_pressed["forward"] = -self.speed * 2
+
+                    self.key_pressed["th"] = self.speed * 2
+
+
+                    self.get_logger().info("Disgust Movement 1!")
+                    self.notperformed = False
+                    self.digustclean = True
+                    self.disgustperforming = False
+
+                    return
+
+                
+                if self.digustclean:
+
+                    self.key_pressed["forward"] = 0.0
+                    
+                    self.key_pressed["th"] = 0.0
+
+                    self.get_logger().info("Disgust Clean!")
+                    self.digustclean = False
+
+                    return
+
+
+        else:
+            self.get_logger().info("No emotion detected yet.")
+        
+
+    
+
     def on_press(self, key):
         print(f"pressing the key {key}")
         try:
+            if key.char == "1":
+                self.happyperforming = True
+                self.emotionactive = True
+            if key.char == "2":
+                self.sadperforming = True
+                self.emotionactive = True
+            if key.char == "3":
+                self.angryperforming = True
+                self.emotionactive = True
+            if key.char == "4":
+                self.surprisedperforming = True
+                self.emotionactive = True
+            if key.char == "5":
+                self.fearperforming = True
+                self.emotionactive = True
+            if key.char == "6":
+                self.disgustperforming = True
+                self.emotionactive = True
+
+            if key.char == "7":
+                self.emotionactive = True
+                self.notperformed = True
+            if key.char == "8":
+                self.emotionactive = False
+                self.notperformed = False
+
             if key.char == "w":
                 self.key_pressed["forward"] = self.speed
             if key.char == "s":

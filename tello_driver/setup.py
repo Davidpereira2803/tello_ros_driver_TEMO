@@ -32,7 +32,8 @@ setup(
     tests_require=["pytest"],
     entry_points={
         "console_scripts": [
-            "tello_driver = tello_driver.tello_driver_node:main"
+            "tello_driver = tello_driver.tello_driver_node:main",
+            "video_subscriber = tello_driver.video_subscriber:main",
         ],
     },
 )

@@ -13,6 +13,20 @@ from tellopy import Tello
 from tellopy._internal.event import Event
 from tellopy._internal.tello import FlightData, LogData
 from tello_driver import connect_to_wifi_device as ctwd
+from std_msgs.msg import String
+
+import tensorflow
+from tensorflow import keras
+from keras.models import load_model
+from time import sleep
+from keras.preprocessing.image import img_to_array
+from keras.preprocessing import image
+import os
+import cv2
+import numpy as np
+import csv
+from collections import deque, Counter
+from math import ceil
 
 # ROS messages
 from nav_msgs.msg import Odometry
@@ -30,6 +44,11 @@ from tello_driver.serializers import (
     generate_imu_msg,
     generate_odom_msg,
 )
+
+face_classifier = cv2.CascadeClassifier(r'/home/david/Projects/TEMO_ros_ws/src/tello_ros_driver_TEMO/haarcascade_frontalface_default.xml')
+classifier = load_model(r'/home/david/Projects/TEMO_ros_ws/src/tello_ros_driver_TEMO/model.h5')
+
+emotion_labels = ['Angry','Disgust','Fear','Happy','Neutral', 'Sad', 'Surprise']
 
 
 class TelloRosWrapper(Node):
@@ -97,7 +116,7 @@ class TelloRosWrapper(Node):
         "4:3"  # Valid options: "4:3" (wider view) or "16:9" (better quality)
     )
     _camera_exposure: int = 0  # Valid values: 0, 1, 2
-    _image_size: tuple[int, int] = (640, 480)
+    _image_size: tuple[int, int] = (320, 240) # 640, 480
 
     _last_cmd_vel_time: int = 0
 
@@ -113,6 +132,7 @@ class TelloRosWrapper(Node):
         self.tello = Tello()
         self.tello.set_loglevel(self.tello.LOG_INFO)
         self.begin()
+        self.emotion_pub = self.create_publisher(String, 'detected_emotion', 10)
 
     def begin(self) -> None:
         """Start all the necessary components of the node."""
@@ -419,32 +439,69 @@ class TelloRosWrapper(Node):
         )
 
     def _camera_image_callback(self) -> None:
-        """Callback for the camera image subscriber."""
+        """Callback for the camera image subscriber with emotion detection."""
         video_stream = self.tello.get_video_stream()
         container = av.open(video_stream)
 
         self.get_logger().info("video stream is starting")
 
+        frame_count = 0
+
         for frame in container.decode(video=0):  # type: ignore
-            # convert PyAV frame => PIL image => OpenCV image
+            # Convert PyAV frame => PIL image => OpenCV image
             image = np.array(frame.to_image())  # type: ignore
 
-            # Reduced image size to have less delay
             image = cv2.resize(
                 image,
                 (self._image_size[0], self._image_size[1]),
                 interpolation=cv2.INTER_LINEAR,
             )
 
-            # convert OpenCV image => ROS Image message
-            image = self._cv_bridge.cv2_to_imgmsg(image, "rgb8")
-            image.header.stamp = self.get_clock().now().to_msg()
-            image.header.frame_id = "tello_front_camera"
+            frame_count += 1
 
+            if frame_count % 9 == 0:
+
+                # Emotion detection starts here
+                gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+                faces = face_classifier.detectMultiScale(gray)
+
+                for (x, y, w, h) in faces:
+                    # Draw rectangle around detected face
+                    cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 255), 2)
+
+                    # Prepare ROI for emotion detection
+                    roi_gray = gray[y:y + h, x:x + w]
+                    roi_gray = cv2.resize(roi_gray, (48, 48), interpolation=cv2.INTER_AREA)
+
+                    if np.sum([roi_gray]) != 0:
+                        roi = roi_gray.astype('float') / 255.0
+                        roi = img_to_array(roi)
+                        roi = np.expand_dims(roi, axis=0)
+
+                        # Predict emotion
+                        prediction = classifier.predict(roi)[0]
+                        label = emotion_labels[prediction.argmax()]
+
+                        self.emotion_pub.publish(String(data=label))
+
+                        label_position = (x, y - 10)
+
+                        # Add emotion label to the image
+                        cv2.putText(image, label, label_position, cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                    else:
+                        # If no face detected, display "No Faces"
+                        cv2.putText(image, 'No Faces', (30, 80), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+
+            # Convert OpenCV image => ROS Image message
+            ros_image = self._cv_bridge.cv2_to_imgmsg(image, "rgb8")
+            ros_image.header.stamp = self.get_clock().now().to_msg()
+            ros_image.header.frame_id = "tello_front_camera"
+
+            # Publish the processed frame to ROS topic
             if self._camera_image_publisher is not None:
-                self._camera_image_publisher.publish(image)
+                self._camera_image_publisher.publish(ros_image)
 
-            # check for normal shutdown
+            # Check for normal shutdown
             if self._stop_request.isSet():
                 return
 
