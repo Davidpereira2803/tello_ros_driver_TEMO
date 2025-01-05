@@ -1,4 +1,9 @@
-# Tello ROS2 Wrapper
+# Tello ROS2 Wrapper TEMO (Fork)
+
+
+## Pre-Introduction
+
+This repository is a fork, and adds an emotion recognition model to the driver, and adds drone reaction movements for 6 emotions.
 
 ## Introduction
 
