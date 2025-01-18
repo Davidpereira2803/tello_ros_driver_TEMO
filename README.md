@@ -5,6 +5,8 @@
 
 This repository is a fork, and adds an emotion recognition model to the driver, and adds drone reaction movements for 6 emotions.
 
+Emotion Recognition Model used: [GitHub Link](https://github.com/SHAIK-AFSANA/facialemotionrecognizerinrealtime)
+
 ## Introduction
 
 This ROS package enables the command of a DJI Tello drone using ROS2 command
