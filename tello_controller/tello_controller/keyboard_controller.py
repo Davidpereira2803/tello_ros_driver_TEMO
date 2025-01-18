@@ -74,11 +74,10 @@ class Controller(Node):
 
         # Fear
         self.fearperf = False
-        self.fearclean = False
 
         # Disgust
         self.disgustperf = False
-        self.digustperf = False
+        self.disgustclean = False
 
 
         self.calltime = 1.5
@@ -320,33 +319,15 @@ class Controller(Node):
 
                 # Fear
                 if self.fearperforming or (self.notperformed and (self.latest_emotion == "Fear")):
-
-                    self.key_pressed["forward"] = -self.speed
-
-                    for i in range(10):
-                        self.key_pressed["right"] = self.speed
-
-                    for i in range(10):
-                        self.key_pressed["right"] = -self.speed
+                    
+                    self._land_pub.publish(Empty())
 
                     self.get_logger().info("Fear Movement 1!")
                     self.notperformed = False
-                    self.fearclean = True
                     self.fearperforming = False
 
                     return
-                
-                if self.fearclean:
-                    
-                    self.key_pressed["forward"] = 0.0
-
-                    self.key_pressed["right"] = 0.0
-
-                    self.get_logger().info("Surprised Clean!")
-                    self.surprisedclean = False
-
-                    return
-
+            
 
                 # Disgust
                 if self.disgustperforming or (self.notperformed and (self.latest_emotion == "Disgust")):
@@ -358,20 +339,20 @@ class Controller(Node):
 
                     self.get_logger().info("Disgust Movement 1!")
                     self.notperformed = False
-                    self.digustclean = True
+                    self.disgustclean = True
                     self.disgustperforming = False
 
                     return
 
                 
-                if self.digustclean:
+                if self.disgustclean:
 
                     self.key_pressed["forward"] = 0.0
                     
                     self.key_pressed["th"] = 0.0
 
                     self.get_logger().info("Disgust Clean!")
-                    self.digustclean = False
+                    self.disgustclean = False
 
                     return
 
@@ -385,28 +366,42 @@ class Controller(Node):
     def on_press(self, key):
         print(f"pressing the key {key}")
         try:
+            # Perform Happy Movement
             if key.char == "1":
                 self.happyperforming = True
                 self.emotionactive = True
+
+            # Perform Sad Movement
             if key.char == "2":
                 self.sadperforming = True
                 self.emotionactive = True
+
+            # Perform Angry Movement
             if key.char == "3":
                 self.angryperforming = True
                 self.emotionactive = True
+            
+            # Perform Surprised Movement
             if key.char == "4":
                 self.surprisedperforming = True
                 self.emotionactive = True
+
+            # Perform Fear Movement
             if key.char == "5":
                 self.fearperforming = True
                 self.emotionactive = True
+
+            # Perform Disgust Movement
             if key.char == "6":
                 self.disgustperforming = True
                 self.emotionactive = True
 
+
+            # Activate Emotion Reaction
             if key.char == "7":
                 self.emotionactive = True
                 self.notperformed = True
+            # Deactivate Emotion Reaction
             if key.char == "8":
                 self.emotionactive = False
                 self.notperformed = False
