@@ -34,7 +34,7 @@ class Controller(Node):
         self.shift_key_pressed = False
         self.shutdown = False
 
-        # Emotion subscriber
+        # Detected emotion subscriber
         self.emotion_sub = self.create_subscription(
             String,
             'detected_emotion',
@@ -42,40 +42,40 @@ class Controller(Node):
             10
         )
 
+
         self.latest_emotion = None
         self.notperformed = True
         self.emotionactive = False
-
-        self.happyperforming = False
-        self.sadperforming = False
-        self.angryperforming = False
-        self.surprisedperforming = False
-        self.fearperforming = False
-        self.disgustperforming = False
-
+        
         # Happy
+        self.happyperforming = False
         self.happyperf = False
         self.happyclean = False
 
         # Sad
+        self.sadperforming = False
         self.sadperf = False
         self.sadclean = False
 
         # Angry
+        self.angryperforming = False
         self.angryperf = False
         self.angryclean = False
         self.angryperf2 = False
         self.count = 0
 
         # Surprised
+        self.surprisedperforming = False
         self.surprisedperf = False
         self.surprisedclean = False
         self.surprisedperf2 = False
 
         # Fear
+        self.fearperforming = False
         self.fearperf = False
 
         # Disgust
+        self.disgustperforming = False
         self.disgustperf = False
         self.disgustclean = False
 
