@@ -51,7 +51,6 @@ class Controller(Node):
             10
         )
 
-
         self.latest_emotion = None
         self.notperformed = True
         self.emotionactive = False
