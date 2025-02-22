@@ -44,12 +44,13 @@ class Controller(Node):
         )
 
         # ESP-32 subscriber 
-        self.esp_sub = self.create_subscription(
-            Float32MultiArray,
-            '/esp/inclinometer',
+        self.subscription = self.create_subscription(
+            Float32MultiArray,  
+            '/esp32/inclinometer', 
             self.inclinometer_callback,
             10
         )
+
 
         self.latest_emotion = None
         self.notperformed = True
@@ -154,23 +155,28 @@ class Controller(Node):
         """Callback for emotion updates."""
         self.latest_emotion = msg.data  
 
+
     def inclinometer_callback(self, msg):
         """Process inclinometer data and map it to drone movement."""
-        roll = msg.data[0]
-        pitch = msg.data[1]
+        roll = msg.data[0]  # Left/Right tilt
+        pitch = msg.data[1]  # Forward/Backward tilt
 
         self.get_logger().info(f"Received roll: {roll}, pitch: {pitch}")
 
-        left_right = int(max(-100, min(100, roll * 5)))
-        forward_backward = int(max(-100, min(100, pitch * 5)))
+        # Map angles to speed (-1.0 to 1.0)
+        left_right = max(-1.0, min(1.0, roll * 0.05))  # Left (-) / Right (+)
+        forward_backward = max(-1.0, min(1.0, pitch * 0.05))  # Backward (-) / Forward (+)
 
-        if abs(left_right) < 10:
-            left_right = 0
-        if abs(forward_backward) < 10:
-            forward_backward = 0
+        # Apply a dead zone to prevent small movements
+        if abs(left_right) < 0.1:
+            left_right = 0.0
+        if abs(forward_backward) < 0.1:
+            forward_backward = 0.0
 
-        command = f'rc {left_right} {forward_backward} 0 0'
-        self.send_tello_command(command)
+        # Store values to be used in cmd_vel_callback()
+        self.key_pressed["right"] = left_right
+        self.key_pressed["forward"] = forward_backward
+
     
     def emotion_reactions(self):
         """Function to perfrom the emotion related reactions"""
