@@ -45,6 +45,7 @@ from tello_driver.serializers import (
     generate_odom_msg,
 )
 
+# Include model files
 face_classifier = cv2.CascadeClassifier(r'/home/david/Projects/TEMO_ros_ws/src/tello_ros_driver_TEMO/haarcascade_frontalface_default.xml')
 classifier = load_model(r'/home/david/Projects/TEMO_ros_ws/src/tello_ros_driver_TEMO/model.h5')
 
@@ -116,7 +117,7 @@ class TelloRosWrapper(Node):
         "4:3"  # Valid options: "4:3" (wider view) or "16:9" (better quality)
     )
     _camera_exposure: int = 0  # Valid values: 0, 1, 2
-    _image_size: tuple[int, int] = (320, 240) # 640, 480
+    _image_size: tuple[int, int] = (320, 240) # Default: (640, 480)
 
     _last_cmd_vel_time: int = 0
 
@@ -132,6 +133,7 @@ class TelloRosWrapper(Node):
         self.tello = Tello()
         self.tello.set_loglevel(self.tello.LOG_INFO)
         self.begin()
+        # Publisher for detected emotion
         self.emotion_pub = self.create_publisher(String, 'detected_emotion', 10)
 
     def begin(self) -> None:
@@ -447,9 +449,9 @@ class TelloRosWrapper(Node):
 
         frame_count = 0
 
-        for frame in container.decode(video=0):  # type: ignore
+        for frame in container.decode(video=0):
             # Convert PyAV frame => PIL image => OpenCV image
-            image = np.array(frame.to_image())  # type: ignore
+            image = np.array(frame.to_image())
 
             image = cv2.resize(
                 image,
@@ -469,7 +471,6 @@ class TelloRosWrapper(Node):
                     # Draw rectangle around detected face
                     cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 255), 2)
 
-                    # Prepare ROI for emotion detection
                     roi_gray = gray[y:y + h, x:x + w]
                     roi_gray = cv2.resize(roi_gray, (48, 48), interpolation=cv2.INTER_AREA)
 
@@ -489,7 +490,7 @@ class TelloRosWrapper(Node):
                         # Add emotion label to the image
                         cv2.putText(image, label, label_position, cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
                     else:
-                        # If no face detected, display "No Faces"
+                        # If no face is detected, display "No Faces"
                         cv2.putText(image, 'No Faces', (30, 80), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
             # Convert OpenCV image => ROS Image message
@@ -501,7 +502,6 @@ class TelloRosWrapper(Node):
             if self._camera_image_publisher is not None:
                 self._camera_image_publisher.publish(ros_image)
 
-            # Check for normal shutdown
             if self._stop_request.isSet():
                 return
 
