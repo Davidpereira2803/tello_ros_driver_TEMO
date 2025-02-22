@@ -6,6 +6,7 @@ from tello_msgs.msg import FlipControl
 from std_msgs.msg import Empty
 from geometry_msgs.msg import Twist
 from std_msgs.msg import String
+from std_msgs.msg import Float32MultiArray
 
 import time
 
@@ -39,6 +40,14 @@ class Controller(Node):
             String,
             'detected_emotion',
             self.emotion_callback,
+            10
+        )
+
+        # ESP-32 subscriber 
+        self.esp_sub = self.create_subscription(
+            Float32MultiArray,
+            '/esp/inclinometer',
+            self.inclinometer_callback,
             10
         )
 
@@ -82,6 +91,7 @@ class Controller(Node):
 
         self.calltime = 1.5
         self.timer = self.create_timer(self.calltime, self.emotion_reactions)  
+
 
     def print_controls(self):
         print("---------------------")
@@ -143,6 +153,24 @@ class Controller(Node):
     def emotion_callback(self, msg):
         """Callback for emotion updates."""
         self.latest_emotion = msg.data  
+
+    def inclinometer_callback(self, msg):
+        """Process inclinometer data and map it to drone movement."""
+        roll = msg.data[0]
+        pitch = msg.data[1]
+
+        self.get_logger().info(f"Received roll: {roll}, pitch: {pitch}")
+
+        left_right = int(max(-100, min(100, roll * 5)))
+        forward_backward = int(max(-100, min(100, pitch * 5)))
+
+        if abs(left_right) < 10:
+            left_right = 0
+        if abs(forward_backward) < 10:
+            forward_backward = 0
+
+        command = f'rc {left_right} {forward_backward} 0 0'
+        self.send_tello_command(command)
     
     def emotion_reactions(self):
         """Function to perfrom the emotion related reactions"""
@@ -359,9 +387,6 @@ class Controller(Node):
 
         else:
             self.get_logger().info("No emotion detected yet.")
-        
-
-    
 
     def on_press(self, key):
         print(f"pressing the key {key}")
