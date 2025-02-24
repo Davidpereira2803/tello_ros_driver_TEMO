@@ -51,6 +51,9 @@ class Controller(Node):
             10
         )
 
+        # activate hand motion control
+        self.handmotion = False
+
         self.latest_emotion = None
         self.notperformed = True
         self.emotionactive = False
@@ -170,8 +173,9 @@ class Controller(Node):
         if abs(forward_backward) < 0.1:
             forward_backward = 0.0
 
-        self.key_pressed["right"] = left_right
-        self.key_pressed["forward"] = forward_backward
+        if self.handmotion:
+            self.key_pressed["right"] = left_right
+            self.key_pressed["forward"] = forward_backward
 
     
     def emotion_reactions(self):
@@ -432,6 +436,14 @@ class Controller(Node):
             if key.char == "8":
                 self.emotionactive = False
                 self.notperformed = False
+
+            # Activate Hand Motion Control
+            if key.char == "9":
+                self.handmotion = True
+            
+            # Deactivate Hand Motion Control
+            if key.char == "0":
+                self.handmotion = False
 
             if key.char == "w":
                 self.key_pressed["forward"] = self.speed
