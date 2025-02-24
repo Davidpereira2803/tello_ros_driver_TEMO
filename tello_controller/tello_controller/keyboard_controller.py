@@ -149,6 +149,7 @@ class Controller(Node):
             FlipControl, self.tello_flip_control_topic_name, 1
         )
 
+
     def emotion_callback(self, msg):
         """Callback for emotion updates."""
         self.latest_emotion = msg.data  
@@ -156,22 +157,19 @@ class Controller(Node):
 
     def inclinometer_callback(self, msg):
         """Process inclinometer data and map it to drone movement."""
-        roll = msg.data[0]  # Left/Right tilt
-        pitch = msg.data[1]  # Forward/Backward tilt
+        roll = msg.data[0]
+        pitch = msg.data[1]
 
         self.get_logger().info(f"Received roll: {roll}, pitch: {pitch}")
 
-        # Map angles to speed (-1.0 to 1.0)
-        left_right = max(-1.0, min(1.0, roll * 0.05))  # Left (-) / Right (+)
-        forward_backward = max(-1.0, min(1.0, pitch * 0.05))  # Backward (-) / Forward (+)
+        left_right = max(-1.0, min(1.0, roll * 0.05))
+        forward_backward = max(-1.0, min(1.0, pitch * 0.05))
 
-        # Apply a dead zone to prevent small movements
         if abs(left_right) < 0.1:
             left_right = 0.0
         if abs(forward_backward) < 0.1:
             forward_backward = 0.0
 
-        # Store values to be used in cmd_vel_callback()
         self.key_pressed["right"] = left_right
         self.key_pressed["forward"] = forward_backward
 
