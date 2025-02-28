@@ -7,6 +7,15 @@ This repository is a fork, and adds an emotion recognition model to the driver, 
 
 Emotion Recognition Model used: [GitHub Link](https://github.com/SHAIK-AFSANA/facialemotionrecognizerinrealtime)
 
+### How to start
+
+Install ROS2, then source the environment `source /opt/ros/jazzy/setup.bash`.
+Next build the app `colcon build`.
+Next launch the app `rqt` for video feed.
+`ros2 launch tello_driver tello_driver.launch.py` for the tello driver
+`ros2 launch tello_controller tello_controller.launch.py` for the keyboard controller
+`ros2 launch esp32_controller esp32.launch.py` for the esp32 controller
+
 ## Introduction
 
 This ROS package enables the command of a DJI Tello drone using ROS2 command

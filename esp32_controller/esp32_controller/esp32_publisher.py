@@ -32,9 +32,11 @@ class ESP32Publisher(Node):
                 parts = decoded_data.split(", ")
                 roll = float(parts[0].split(": ")[1])
                 pitch = float(parts[1].split(": ")[1])
+                yaw = float(parts[2].split(": ")[1])
+                updown = float(parts[3].split(": ")[1])
 
                 msg = Float32MultiArray()
-                msg.data = [roll, pitch]
+                msg.data = [roll, pitch, yaw, updown]
 
                 self.publisher_.publish(msg)
 

@@ -162,20 +162,27 @@ class Controller(Node):
         """Process inclinometer data and map it to drone movement."""
         roll = msg.data[0]
         pitch = msg.data[1]
-
-        self.get_logger().info(f"Received roll: {roll}, pitch: {pitch}")
+        yaw = msg.data[2]
+        updown = msg.data[3]
 
         left_right = max(-1.0, min(1.0, roll * 0.05))
         forward_backward = max(-1.0, min(1.0, pitch * 0.05))
+        clockwise = max(-1.0, min(1.0, yaw * 0.05))
+        up_down = max(-1.0, min(1.0, updown))
 
         if abs(left_right) < 0.1:
             left_right = 0.0
         if abs(forward_backward) < 0.1:
             forward_backward = 0.0
+        if abs(clockwise) < 0.1:
+            clockwise = 0.0
 
         if self.handmotion:
+            self.get_logger().info(f"Received roll: {roll}, pitch: {pitch}, yaw: {yaw}, updown: {updown}")
             self.key_pressed["right"] = left_right
             self.key_pressed["forward"] = forward_backward
+            self.key_pressed["cw"] = clockwise
+            self.key_pressed["th"] = up_down
 
     
     def emotion_reactions(self):
