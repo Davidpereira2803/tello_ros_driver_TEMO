@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from tello_controller.esp32_publisher import ESP32Publisher
+from esp32_controller.esp32_publisher import ESP32Publisher
 import rclpy
 
 
