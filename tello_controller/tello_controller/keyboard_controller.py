@@ -163,12 +163,14 @@ class Controller(Node):
         roll = msg.data[0]
         pitch = msg.data[1]
         yaw = msg.data[2]
-        updown = msg.data[3]
+        #updown = msg.data[3]
+        takeoff = msg.data[3]
+        land = msg.data[4]
 
         left_right = max(-1.0, min(1.0, roll * 0.05))
         forward_backward = max(-1.0, min(1.0, pitch * 0.05))
         clockwise = max(-1.0, min(1.0, yaw * 0.05))
-        up_down = max(-1.0, min(1.0, updown))
+        #up_down = max(-1.0, min(1.0, updown))
 
         if abs(left_right) < 0.1:
             left_right = 0.0
@@ -178,11 +180,25 @@ class Controller(Node):
             clockwise = 0.0
 
         if self.handmotion:
-            self.get_logger().info(f"Received roll: {roll}, pitch: {pitch}, yaw: {yaw}, updown: {updown}")
+            self.get_logger().info(f"Received roll: {roll}, pitch: {pitch}, yaw: {yaw}")
             self.key_pressed["right"] = left_right
             self.key_pressed["forward"] = forward_backward
             self.key_pressed["cw"] = clockwise
-            self.key_pressed["th"] = up_down
+            #self.key_pressed["th"] = up_down
+
+        if takeoff:
+            self.get_logger().info(f"Drone is about to take off!")
+            self._takeoff_pub.publish(Empty())
+            self.key_pressed["right"] = left_right
+            self.key_pressed["forward"] = forward_backward
+            self.key_pressed["cw"] = clockwise
+        
+        if land:
+            self.get_logger().info(f"Drone is about to land!")
+            self._land_pub.publish(Empty())
+            self.key_pressed["right"] = left_right
+            self.key_pressed["forward"] = forward_backward
+            self.key_pressed["cw"] = clockwise
 
     
     def emotion_reactions(self):
