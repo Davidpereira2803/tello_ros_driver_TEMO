@@ -1,6 +1,5 @@
 # Tello ROS2 Wrapper TEMO (Fork)
 
-
 ## Pre-Introduction
 
 This repository is a fork, and adds an emotion recognition model to the driver, and adds drone reaction movements for 6 emotions.
@@ -10,11 +9,14 @@ Emotion Recognition Model used: [GitHub Link](https://github.com/SHAIK-AFSANA/fa
 ### How to start
 
 Install ROS2, then source the environment `source /opt/ros/jazzy/setup.bash`.
-Next build the app `colcon build`.
-Next launch the app `rqt` for video feed.
+Create a ROS workspace `mkdir -p ~/TEMO_ROS/src`, `cd ~/TEMO_ROS/src`, `git clone https://github.com/Davidpereira2803/tello_ros_driver_TEMO.git` and `cd ..`.
+Next build the app `colcon build` and source the build `source install/setup.bash`.
+
 `ros2 launch tello_driver tello_driver.launch.py` for the tello driver
 `ros2 launch tello_controller tello_controller.launch.py` for the keyboard controller
 `ros2 launch esp32_controller esp32.launch.py` for the esp32 controller
+`ros2 launch interface interface.launch.py` for the graphical interface
+
 
 ## Introduction
 
