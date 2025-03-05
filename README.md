@@ -8,7 +8,10 @@ Emotion Recognition Model used: [GitHub Link](https://github.com/SHAIK-AFSANA/fa
 
 ### How to start
 
-Install ROS2, then source the environment `source /opt/ros/jazzy/setup.bash`.
+Install ROS2, then source the environment
+```bash
+source /opt/ros/jazzy/setup.bash
+```
 Create a ROS workspace `mkdir -p ~/TEMO_ROS/src`, `cd ~/TEMO_ROS/src`, `git clone https://github.com/Davidpereira2803/tello_ros_driver_TEMO.git` and `cd ..`.
 Next build the app `colcon build` and source the build `source install/setup.bash`.
 
