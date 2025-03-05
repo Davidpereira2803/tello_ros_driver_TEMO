@@ -3,11 +3,18 @@
 
 ## Introduction
 
-This repository is a fork, and adds an emotion recognition model to the driver, and adds drone reaction movements for 6 emotions.
+This repository is a fork of the Tello driver developped by the SNT-ARG team, it adds an emotion recognition model to the driver, and drone reaction movements for 6 emotions. Furthermore, a graphical interface was developped to display the video feed and some sensory data, such as the battery status.
+
+## What is new?
+
+The project adds 2 new main functionalities:
+
+1. Facial emotion detection and reaction movements to each emotion
+2. Full drone control using an inclinometer module (MPU9250) paired with a microcontroller (ESP32)
 
 Emotion Recognition Model used: [GitHub Link](https://github.com/SHAIK-AFSANA/facialemotionrecognizerinrealtime)
 
-### How to start
+## How to start and launch the project
 
 Install ROS2, then source the environment
 ```bash
