@@ -1,108 +1,71 @@
 # Tello ROS2 Wrapper TEMO (Fork)
+(This is not the original README.md -> [View Original README](docs/ORIGINAL_README.md))
 
+## Introduction
 
-## Pre-Introduction
+This repository is a fork of the Tello driver developped by the SNT-ARG team, it adds an emotion recognition model to the driver, and drone reaction movements for 6 emotions. Furthermore, a graphical interface was developped to display the video feed and some sensory data, such as the battery status.
 
-This repository is a fork, and adds an emotion recognition model to the driver, and adds drone reaction movements for 6 emotions.
+## What is new?
+
+The project adds 2 new main functionalities:
+
+1. Facial emotion detection and reaction movements to each emotion
+2. Full drone control using an inclinometer module (MPU9250) paired with a microcontroller (ESP32)
 
 Emotion Recognition Model used: [GitHub Link](https://github.com/SHAIK-AFSANA/facialemotionrecognizerinrealtime)
 
-### How to start
+## How to start and launch the project
 Create a ROS2 environment and clone this repository into the `src`folder. Always stay in the root folder of the ROS2 environment for the next steps.
 
 #### Manually launch one by one
 
-Install ROS2, then source the environment `source /opt/ros/jazzy/setup.bash`.
-Next build the app `colcon build`.
-Next launch the app `rqt` for video feed.
-`ros2 launch tello_driver tello_driver.launch.py` for the tello driver
-`ros2 launch tello_controller tello_controller.launch.py` for the keyboard controller
-`ros2 launch esp32_controller esp32.launch.py` for the esp32 controller
+Install ROS2, then source the environment
+```bash
+source /opt/ros/jazzy/setup.bash
+```
+Create a ROS workspace
+```bash
+mkdir -p ~/TEMO_ROS/src
+```
 
-#### Automatic launch
-Install ROS2 and source the environment as before. 
-Launch the following command and follow the instructions prompted on the terminal: `./src/tello_ros_driver_TEMO/launch_all.sh`
+```bash
+cd ~/TEMO_ROS/src
+```
 
-## Introduction
+```bash
+git clone https://github.com/Davidpereira2803/tello_ros_driver_TEMO.git
 
-This ROS package enables the command of a DJI Tello drone using ROS2 command
-velocity, building a bridge between ROS and the `tellopy` Python library.
+cd ..
+```
+Next build the app
+```bash
+colcon build
+```
 
-> **Note:** It's important to install `tellopy` from source,
-> as the pip version is outdated. The `install_tellopy.sh` script in this
-> repository can be used for this purpose.
+and source the build
 
-## ROS Messages
+```bash
+source install/setup.bash
+```
 
-- **`FlightStats.msg`**: Contains flight statistics and data from the drone.
-- **`FlipControl.msg`**: Used to control flip actions of the drone.
+Tello Driver
+```bash
+ros2 launch tello_driver tello_driver.launch.py
+```
 
-## ROS Topics
+Keyboard Controller
+```bash
+ros2 launch tello_controller tello_controller.launch.py
+```
 
-### Subscribed Topics
+ESP32 + MPU9250 Controller
+```bash
+ros2 launch esp32_controller esp32.launch.py
+```
 
-| Topic Name          | Message Type                 | Description                                      |
-| ------------------- | ---------------------------- | ------------------------------------------------ |
-| `/camera/exposure`  | `std_msgs/msg/Int32`         | Sets camera exposure. _(Valid values: 0, 1, 2)_  |
-| `/cmd_vel`          | `geometry_msgs/msg/Twist`    | Command velocity for drone movement.             |
-| `/flip`             | `tello_msgs/msg/FlipControl` | Controls flips of the drone.                     |
-| `/land`             | `std_msgs/msg/Empty`         | Triggers drone landing.                          |
-| `/takeoff`          | `std_msgs/msg/Empty`         | Triggers drone takeoff.                          |
-| `/palm_land`        | `std_msgs/msg/Empty`         | Activates palm landing feature.                  |
-| `/set_att_limit`    | `std_msgs/msg/Int32`         | Sets altitude limit for the drone. _(in meters)_ |
-| `/throw_and_go`     | `std_msgs/msg/Empty`         | Activates throw and go feature.                  |
-| `/toggle_fast_mode` | `std_msgs/msg/Empty`         | Toggles the drone's fast mode.                   |
+Graphical Interface
+```bash
+ros2 launch interface interface.launch.py
+```
+---
 
-### Published Topics
-
-| Topic Name          | Message Type                 | Description                                                            |
-| ------------------- | ---------------------------- | ---------------------------------------------------------------------- |
-| `/camera/image_raw` | `sensor_msgs/msg/Image`      | Camera images from the drone.                                          |
-| `/flight_data`      | `tello_msgs/msg/FlightStats` | Flight data and statistics.                                            |
-| `/imu`              | `sensor_msgs/msg/Imu`        | IMU data of the drone.                                                 |
-| `/odom`             | `nav_msgs/msg/Odometry`      | Odometry information. _(It is very inacurate. Should be avoided)_ |
-| `/battery_state` | `sensor_msgs/BatteryState` | Battery State information. (Percentage is from 0-100%)
-
-## ROS Parameters
-
-Here are the configurable parameters for the `tello_ros_wrapper`:
-
-### Topics
-
-| Parameter Name                | Default Value      | Description                             |
-| ----------------------------- | ------------------ | --------------------------------------- |
-| `image_topic_name`            | 'camera/image_raw' | Topic name for camera images.           |
-| `flight_data_topic_name`      | 'flight_data'      | Topic name for flight data.             |
-| `velocity_command_topic_name` | 'cmd_vel'          | Topic name for velocity commands.       |
-| `land_topic_name`             | 'land'             | Topic name for landing command.         |
-| `takeoff_topic_name`          | 'takeoff'          | Topic name for takeoff command.         |
-| `flip_control_topic_name`     | 'flip'             | Topic name for flip control.            |
-| `odom_topic_name`             | 'odom'             | Topic name for odometry data.           |
-| `imu_topic_name`              | 'imu'              | Topic name for IMU data.                |
-| `toggle_fast_mode_topic_name` | 'toggle_fast_mode' | Topic name for toggling fast mode.      |
-| `camera_exposure_topic_name`  | 'camera/exposure'  | Topic name for camera exposure control. |
-
-### Frame IDs
-
-| Parameter Name   | Default Value | Description                 |
-| ---------------- | ------------- | --------------------------- |
-| `imu_frame_id`   | 'imu'         | Frame ID for IMU data.      |
-| `odom_frame_id`  | 'odom'        | Frame ID for odometry data. |
-| `drone_frame_id` | 'tello'       | Frame ID for the drone.     |
-
-### Wifi Setup
-
-| Parameter Name         | Default Value | Description                          |
-| ---------------------- | ------------- | ------------------------------------ |
-| `auto_wifi_connection` | false         | Automatically connect to Tello WiFi. |
-| `tello_ssid`           |               | SSID for Tello WiFi connection.      |
-| `tello_pw`             |               | Password for Tello WiFi.             |
-
-### Settings
-
-| Parameter Name    | Default Value | Description                               |
-| ----------------- | ------------- | ----------------------------------------- |
-| `alt_limit`       | 30            | Altitude limit in meters.                 |
-| `fast_mode`       | false         | Enables fast mode for the drone.          |
-| `video_mode`      | '4:3'         | Sets video mode (options: '4:3', '16:9'). |
-| `camera_exposure` | 0             | Camera exposure level (0, 1, 2).          |
