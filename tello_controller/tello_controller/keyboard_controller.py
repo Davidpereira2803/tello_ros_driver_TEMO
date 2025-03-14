@@ -3,10 +3,8 @@ from pynput import keyboard
 
 # ROS messages
 from tello_msgs.msg import FlipControl
-from std_msgs.msg import Empty
+from std_msgs.msg import Empty, String, Float32MultiArray
 from geometry_msgs.msg import Twist
-from std_msgs.msg import String
-from std_msgs.msg import Float32MultiArray
 
 import time
 
@@ -36,20 +34,10 @@ class Controller(Node):
         self.shutdown = False
 
         # Detected emotion subscriber
-        self.emotion_sub = self.create_subscription(
-            String,
-            'detected_emotion',
-            self.emotion_callback,
-            10
-        )
+        self.emotion_sub = self.create_subscription(String, 'detected_emotion', self.emotion_callback, 10)
 
         # ESP-32 subscriber 
-        self.subscription = self.create_subscription(
-            Float32MultiArray,  
-            '/esp32/inclinometer', 
-            self.inclinometer_callback,
-            10
-        )
+        self.subscription = self.create_subscription( Float32MultiArray, '/esp32/inclinometer', self.inclinometer_callback, 10)
 
         # activate hand motion control
         self.handmotion = False

@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import QLabel, QVBoxLayout, QHBoxLayout, QWidget
 from PyQt6.QtGui import QPixmap, QImage
 from PyQt6.QtCore import Qt, QTimer
 from sensor_msgs.msg import BatteryState, Image
-from std_msgs.msg import Float32MultiArray
+from std_msgs.msg import Float32MultiArray, String
 import numpy as np
 from cv_bridge import CvBridge
 
@@ -39,9 +39,13 @@ class TelloGUI(Node, QWidget):
         self.mpu_label = QLabel("MPU Values")
         self.mpu_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
+        self.emotion_label = QLabel("Detected Emotion")
+        self.emotion_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
         right_layout.addStretch(1)  
         right_layout.addWidget(self.battery_label)
         right_layout.addWidget(self.mpu_label)
+        right_layout.addWidget(self.emotion_label)
         right_layout.addStretch(1)
  
         main_layout.addLayout(video_layout)
@@ -51,9 +55,10 @@ class TelloGUI(Node, QWidget):
         
         self.setLayout(main_layout)
 
-        self.create_subscription(BatteryState, "/battery_state", self.update_battery, 10)
-        self.create_subscription(Image, "/camera/image_raw", self.update_video_feed, 10)
-        self.create_subscription(Float32MultiArray, "/esp32/inclinometer", self.update_mpu, 10)
+        self.create_subscription(BatteryState, '/battery_state', self.update_battery, 10)
+        self.create_subscription(Image, '/camera/image_raw', self.update_video_feed, 10)
+        self.create_subscription(Float32MultiArray, '/esp32/inclinometer', self.update_mpu, 10)
+        self.emotion_sub = self.create_subscription(String, 'detected_emotion', self.update_emotions, 10)
 
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.ros_spin)
@@ -83,6 +88,11 @@ class TelloGUI(Node, QWidget):
 
         pixmap = QPixmap.fromImage(q_img)
         self.video_label.setPixmap(pixmap)
+
+    def update_emotions(self, msg):
+        """ Update detected emotions"""
+        current_emotion = msg.data
+        self.emotion_label.setText(f"Current Emotion: {current_emotion}")
 
     def ros_spin(self):
         """ Process ROS2 events """
