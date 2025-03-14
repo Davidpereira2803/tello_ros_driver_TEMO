@@ -71,4 +71,8 @@ ros2 launch interface interface.launch.py
 
 ### Build & Launch all together
 
-Be in the root folder of the ROS2 environment, and use this command: `./src/tello_ros_driver_TEMO/launch_all.sh`.
+Be in the root folder of the ROS2 environment, and use this command: 
+```bash
+./src/tello_ros_driver_TEMO/launch_all.sh
+```
+---
