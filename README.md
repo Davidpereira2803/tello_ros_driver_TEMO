@@ -8,6 +8,9 @@ This repository is a fork, and adds an emotion recognition model to the driver, 
 Emotion Recognition Model used: [GitHub Link](https://github.com/SHAIK-AFSANA/facialemotionrecognizerinrealtime)
 
 ### How to start
+Create a ROS2 environment and clone this repository into the `src`folder. Always stay in the root folder of the ROS2 environment for the next steps.
+
+#### Manually launch one by one
 
 Install ROS2, then source the environment `source /opt/ros/jazzy/setup.bash`.
 Next build the app `colcon build`.
@@ -15,6 +18,10 @@ Next launch the app `rqt` for video feed.
 `ros2 launch tello_driver tello_driver.launch.py` for the tello driver
 `ros2 launch tello_controller tello_controller.launch.py` for the keyboard controller
 `ros2 launch esp32_controller esp32.launch.py` for the esp32 controller
+
+#### Automatic launch
+Install ROS2 and source the environment as before. 
+Launch the following command and follow the instructions prompted on the terminal: `./src/tello_ros_driver_TEMO/launch_all.sh`
 
 ## Introduction
 
