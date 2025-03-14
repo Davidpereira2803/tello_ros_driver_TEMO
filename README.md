@@ -17,7 +17,7 @@ Emotion Recognition Model used: [GitHub Link](https://github.com/SHAIK-AFSANA/fa
 ## How to start and launch the project
 Create a ROS2 environment and clone this repository into the `src`folder. Always stay in the root folder of the ROS2 environment for the next steps.
 
-#### Manually launch one by one
+### Manually launch one by one
 
 Install ROS2, then source the environment
 ```bash
@@ -69,3 +69,6 @@ ros2 launch interface interface.launch.py
 ```
 ---
 
+### Build & Launch all together
+
+Be in the root folder of the ROS2 environment, and use this command: `./src/tello_ros_driver_TEMO/launch_all.sh`.
