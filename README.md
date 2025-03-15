@@ -15,9 +15,12 @@ The project adds 2 new main functionalities:
 Emotion Recognition Model used: [GitHub Link](https://github.com/SHAIK-AFSANA/facialemotionrecognizerinrealtime)
 
 ## How to start and launch the project
+
+### Build & Launch
+
 Create a ROS2 environment and clone this repository into the `src`folder. Always stay in the root folder of the ROS2 environment for the next steps.
 
-### Manually launch one by one
+#### Manually launch one by one
 
 Install ROS2, then source the environment
 ```bash
@@ -69,10 +72,22 @@ ros2 launch interface interface.launch.py
 ```
 ---
 
-### Build & Launch all together
+#### Build & Launch all together
 
 Be in the root folder of the ROS2 environment, and use this command: 
 ```bash
 ./src/tello_ros_driver_TEMO/launch_all.sh
 ```
 ---
+
+### How to use it
+
+After launching everything there is a interface on which one can see the video feed and some data from the drone and the MPU-9250 sensor. After clicking on the interface, one can start using the keyboard by default to control the drone:
+|  Key  |  Action  |  Description  |
+|-------|----------|---------------|
+|  `t`  | takeoff | hfhfhf |
+|  `l`  | land | hfhfhf |
+|  `w`  | forward | hfhfhf |
+|  `s`  | backward | hfhfhf |
+|  `a`  | left | hfhfhf |
+|  `d`  | right | hfhfhf |
