@@ -85,9 +85,9 @@ Be in the root folder of the ROS2 environment, and use this command:
 After launching everything there is a interface on which one can see the video feed and some data from the drone and the MPU-9250 sensor. After clicking on the interface, one can start using the keyboard by default to control the drone:
 |  Key  |  Action  |  Description  |
 |-------|----------|---------------|
-|  `t`  | takeoff | hfhfhf |
-|  `l`  | land | hfhfhf |
-|  `w`  | forward | hfhfhf |
-|  `s`  | backward | hfhfhf |
-|  `a`  | left | hfhfhf |
-|  `d`  | right | hfhfhf |
+|  `t`  | takeoff | Take off the drone |
+|  `l`  | land | Land the drone |
+|  `w`  | forward | Fly the drone forwards |
+|  `s`  | backward | Fly the drone backwards |
+|  `a`  | left | Fly the drone to the left |
+|  `d`  | right | Fly the drone to the right |
