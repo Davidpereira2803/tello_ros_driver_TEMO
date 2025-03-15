@@ -448,11 +448,11 @@ class Controller(Node):
                 self.emotionactive = False
                 self.notperformed = False
 
-            # Activate Hand Motion Control
+            # Activate Hand Motion Control with MPU
             if key.char == "9":
                 self.handmotion = True
             
-            # Deactivate Hand Motion Control
+            # Deactivate Hand Motion Control with MPU
             if key.char == "0":
                 self.handmotion = False
 

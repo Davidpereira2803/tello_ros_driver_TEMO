@@ -83,11 +83,41 @@ Be in the root folder of the ROS2 environment, and use this command:
 ### How to use it
 
 After launching everything there is a interface on which one can see the video feed and some data from the drone and the MPU-9250 sensor. After clicking on the interface, one can start using the keyboard by default to control the drone:
-|  Key  |  Action  |  Description  |
-|-------|----------|---------------|
-|  `t`  | takeoff | Take off the drone |
-|  `l`  | land | Land the drone |
-|  `w`  | forward | Fly the drone forwards |
-|  `s`  | backward | Fly the drone backwards |
-|  `a`  | left | Fly the drone to the left |
-|  `d`  | right | Fly the drone to the right |
+
+| Key  | Action                      | Description                             |
+|------|-----------------------------|-----------------------------------------|
+| `t`  | take off                    | drone lifts off into the air            |
+| `l`  | land                        | drone lands safely                      |
+| `w`  | forward                     | moves the drone forward                 |
+| `s`  | backward                    | moves the drone backward                |
+| `a`  | left                        | moves the drone left                    |
+| `d`  | right                       | moves the drone right                   |
+| `↑`  | move up                     | increases altitude                      |
+| `↓`  | move down                   | decreases altitude                      |
+| `←`  | yaw left                    | rotates the drone left                  |
+| `→`  | yaw right                   | rotates the drone right                 |
+| `z`  | increase speed              | increases the drone speed by 0.1        |
+| `x`  | decrease speed              | reduces the speed by 0.1                |
+| `Shift + ↑`   | flip forward       | drone flips forward                     |
+| `Shift + ↓`   | flip backward      | drone flips backward                    |
+| `Shift + ←`   | flip left          | drone flips left                        |
+| `Shift + →`   | flip right         | drone flips right                       |
+| `1`           | happy movement     | drone performs happy movement           |
+| `1`  | happy movement              | drone performs happy movement           |
+| `2`  | sad movement                | drone performs sad movement             |
+| `3`  | angry movement              | drone performs angry movement           |
+| `4`  | surprised movement          | drone performs surprised movement       |
+| `5`  | fear movement               | drone performs fear movement            |
+| `6`  | disgust movement            | drone performs disgust movement         |
+| `7`  | activate emotion reaction   | enables emotion reaction mode           |
+| `8`  | deactivate emotion reaction | disables emotion reaction mode          |
+| `9`  | activate mpu control        | enables MPU control                     |
+| `0`  | deactivate mpu control      | disables MPU control                    |
+
+**Note:**
+- Arrow keys (`↑`, `↓`, `←`, `→`) control altitude and yaw rotation.  
+- **Shift + Arrow Keys** trigger flips in the corresponding direction.  
+- Speed adjustments (`z`, `x`) modify the drone's speed gradually.
+
+
+
