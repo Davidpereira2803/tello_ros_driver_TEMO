@@ -39,12 +39,25 @@ class TelloGUI(Node, QWidget):
         self.mpu_label = QLabel("MPU Values")
         self.mpu_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
+        self.flying_status_label = QLabel("Drone in Idle status")
+        self.flying_status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.flying_status_label.setStyleSheet("background-color: gray; color: white; border-radius: 5px; padding: 5px; font-size: 16px;")
+
+        self.takeoff_timer = QTimer(self)
+        self.takeoff_timer.setSingleShot(True)
+        self.takeoff_timer.timeout.connect(self.reset_flying_status)
+
+        self.land_timer = QTimer(self)
+        self.land_timer.setSingleShot(True)
+        self.land_timer.timeout.connect(self.reset_flying_status)
+
         self.emotion_label = QLabel("Detected Emotion")
         self.emotion_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         right_layout.addStretch(1)  
         right_layout.addWidget(self.battery_label)
         right_layout.addWidget(self.mpu_label)
+        right_layout.addWidget(self.flying_status_label)
         right_layout.addWidget(self.emotion_label)
         right_layout.addStretch(1)
  
@@ -76,7 +89,29 @@ class TelloGUI(Node, QWidget):
         yaw = msg.data[2]
         takeoff = msg.data[3]
         land = msg.data[4]
-        self.mpu_label.setText(f"Received roll: {roll}, pitch: {pitch}, yaw: {yaw}, take off: {takeoff}, land: {land}")
+
+        self.mpu_label.setText(
+            f"Received MPU Values:\n"
+            f"Roll: {roll:.2f}\n"
+            f"Pitch: {pitch:.2f}\n"
+            f"Yaw: {yaw:.2f}\n"
+        )
+
+        if takeoff != 0:
+            self.flying_status_label.setText("Status: TakeOff!")
+            self.flying_status_label.setStyleSheet("background-color: green; color: white; border-radius: 5px; padding: 10px; font-size: 18px;")
+            self.takeoff_timer.start(2500)
+
+        if land != 0:
+            self.flying_status_label.setText("Status: Landing!")
+            self.flying_status_label.setStyleSheet("background-color: red; color: white; border-radius: 5px; padding: 5px; font-size: 18px;")
+            self.land_timer.start(2500)
+
+
+    def reset_flying_status(self):
+        """ Reset flying status label color after 2 second timeout """
+        self.status_label.setText("Status: Idle")
+        self.status_label.setStyleSheet("background-color: black; color: white; border-radius: 5px; padding: 5px; font-size: 16px;")
 
     def update_video_feed(self, msg):
         """ Update video feed display """

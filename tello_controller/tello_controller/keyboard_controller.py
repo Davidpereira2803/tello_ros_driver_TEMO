@@ -171,7 +171,7 @@ class Controller(Node):
             self.get_logger().info(f"Received roll: {roll}, pitch: {pitch}, yaw: {yaw}")
             self.key_pressed["right"] = left_right
             self.key_pressed["forward"] = forward_backward
-            self.key_pressed["cw"] = clockwise
+            self.key_pressed["cw"] = -clockwise
             #self.key_pressed["th"] = up_down
 
         if takeoff:
