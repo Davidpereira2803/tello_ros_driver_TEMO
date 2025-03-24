@@ -9,6 +9,12 @@ def generate_launch_description():
         output="screen",
     )
 
+    joy_node = Node(
+        package="joy",
+        executable="joy_node",
+        output="screen",
+    )
+
     ld = LaunchDescription()
     ld.add_action(ps4_driver_cmd)
 
