@@ -17,5 +17,6 @@ def generate_launch_description():
 
     ld = LaunchDescription()
     ld.add_action(ps4_driver_cmd)
+    ld.add_action(joy_node)
 
     return ld
