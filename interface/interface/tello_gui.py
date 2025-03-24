@@ -71,7 +71,7 @@ class TelloGUI(Node, QWidget):
         self.create_subscription(BatteryState, '/battery_state', self.update_battery, 10)
         self.create_subscription(Image, '/camera/image_raw', self.update_video_feed, 10)
         self.create_subscription(Float32MultiArray, '/esp32/inclinometer', self.update_mpu, 10)
-        self.emotion_sub = self.create_subscription(String, 'detected_emotion', self.update_emotions, 10)
+        self.emotion_sub = self.create_subscription(String, '/detected_emotion', self.update_emotions, 10)
 
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.ros_spin)

@@ -34,13 +34,22 @@ class Controller(Node):
         self.shutdown = False
 
         # Detected emotion subscriber
-        self.emotion_sub = self.create_subscription(String, 'detected_emotion', self.emotion_callback, 10)
+        self.emotion_sub = self.create_subscription(String, '/detected_emotion', self.emotion_callback, 10)
 
         # ESP-32 subscriber 
         self.subscription = self.create_subscription( Float32MultiArray, '/esp32/inclinometer', self.inclinometer_callback, 10)
 
+        # PS4 Controller subscriber
+        self.ps4_cmd_vel_sub = self.create_subscription(Twist, '/ps4_cmd_vel', self.ps4_cmd_vel_callback, 10)
+
+        # activate ps4 controller
+        self.ps4controller = False
+
         # activate hand motion control
         self.handmotion = False
+
+        # Current mode
+        self.current_mode = "Default"
 
         self.latest_emotion = None
         self.notperformed = True
@@ -140,11 +149,31 @@ class Controller(Node):
             FlipControl, self.tello_flip_control_topic_name, 1
         )
 
+        self.control_mode_pub = self.create_publisher(
+            String, '/control_mode',
+            10
+        )
+
+    def set_control_mode(self, mode: str):
+        if self.current_mode != mode:
+            self.current_mode = mode
+            msg = String()
+            msg.data = mode
+            self.control_mode_pub.publish
 
     def emotion_callback(self, msg):
         """Callback for emotion updates."""
         self.latest_emotion = msg.data  
 
+    def ps4_cmd_vel_callback(self, msg):
+        """Callback for ps4 controller updates."""
+
+        if self.ps4controller:
+            self.get_logger().info(f"Received ps4 command: {msg}") 
+            self.key_pressed["th"] = msg.linear.z
+            self.key_pressed["right"] = msg.linear.y
+            self.key_pressed["forward"] = msg.linear.x
+            self.key_pressed["cw"] = msg.angular.z
 
     def inclinometer_callback(self, msg):
         """Process inclinometer data and map it to drone movement."""
@@ -403,58 +432,71 @@ class Controller(Node):
 
 
         else:
-            self.get_logger().info("No emotion detected yet.")
+            self.get_logger().info("No emotion yet.")
 
     def on_press(self, key):
         print(f"pressing the key {key}")
         try:
             # Perform Happy Movement
-            if key.char == "1":
+            if key.char == "1" and self.shift_key_pressed:
                 self.happyperforming = True
                 self.emotionactive = True
 
             # Perform Sad Movement
-            if key.char == "2":
+            if key.char == "2" and self.shift_key_pressed:
                 self.sadperforming = True
                 self.emotionactive = True
 
             # Perform Angry Movement
-            if key.char == "3":
+            if key.char == "3" and self.shift_key_pressed:
                 self.angryperforming = True
                 self.emotionactive = True
             
             # Perform Surprised Movement
-            if key.char == "4":
+            if key.char == "4" and self.shift_key_pressed:
                 self.surprisedperforming = True
                 self.emotionactive = True
 
             # Perform Fear Movement
-            if key.char == "5":
+            if key.char == "5" and self.shift_key_pressed:
                 self.fearperforming = True
                 self.emotionactive = True
 
             # Perform Disgust Movement
-            if key.char == "6":
+            if key.char == "6" and self.shift_key_pressed:
                 self.disgustperforming = True
                 self.emotionactive = True
 
 
             # Activate Emotion Reaction
-            if key.char == "7":
+            if key.char == "1":
                 self.emotionactive = True
                 self.notperformed = True
             # Deactivate Emotion Reaction
-            if key.char == "8":
+            if key.char == "2":
                 self.emotionactive = False
                 self.notperformed = False
 
             # Activate Hand Motion Control with MPU
-            if key.char == "9":
-                self.handmotion = True
-            
+            if key.char == "3":
+                if self.ps4controller == False:
+                    self.handmotion = True
+                    self.current_mode("MPU")
             # Deactivate Hand Motion Control with MPU
-            if key.char == "0":
+            if key.char == "4":
                 self.handmotion = False
+                self.current_mode("Default")
+
+            # Activate PS4 Controller
+            if key.char == "5":
+                if self.handmotion == False:
+                   self.ps4controller = True
+                   self.current_mode("PS4")
+            # Deactivate PS4 Controller
+            if key.char == "6":
+                self.ps4controller = False
+                self.current_mode("Default")
+     
 
             if key.char == "w":
                 self.key_pressed["forward"] = self.speed

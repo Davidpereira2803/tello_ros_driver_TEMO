@@ -134,7 +134,7 @@ class TelloRosWrapper(Node):
         self.tello.set_loglevel(self.tello.LOG_INFO)
         self.begin()
         # Publisher for detected emotion
-        self.emotion_pub = self.create_publisher(String, 'detected_emotion', 10)
+        self.emotion_pub = self.create_publisher(String, '/detected_emotion', 10)
 
     def begin(self) -> None:
         """Start all the necessary components of the node."""

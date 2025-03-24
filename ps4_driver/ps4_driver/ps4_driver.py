@@ -7,7 +7,7 @@ class PS4Driver(Node):
     def __init__(self):
         super().__init__('ps4_driver')
 
-        self.publisher_ = self.create_publisher(Twist, '/cmd_vel', 10)
+        self.publisher_ = self.create_publisher(Twist, '/ps4_cmd_vel', 10)
 
         self.takeoff_publisher = self.create_publisher(Empty, '/takeoff', 10)
         self.land_publisher = self.create_publisher(Empty, '/land', 10)
@@ -19,7 +19,7 @@ class PS4Driver(Node):
     def joystick_callback(self, msg: Joy):
         twist = Twist()
 
-        dead_zone = 0.2 
+        dead_zone = 0.3 
 
         def apply_dead_zone(value):
             return value if abs(value) > dead_zone else 0.0
@@ -36,9 +36,11 @@ class PS4Driver(Node):
             return
 
         if msg.buttons[0] == 1 and self.prev_buttons[0] == 0:
+            self.get_logger().info(f"PS4 Takeoff")
             self.takeoff_publisher.publish(Empty())
 
         if msg.buttons[1] == 1 and self.prev_buttons[1] == 0:
+            self.get_logger().info(f"PS4 Land")
             self.land_publisher.publish(Empty())
 
         self.prev_buttons = msg.buttons
