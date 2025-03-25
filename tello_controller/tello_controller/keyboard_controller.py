@@ -5,6 +5,7 @@ from pynput import keyboard
 from tello_msgs.msg import FlipControl
 from std_msgs.msg import Empty, String, Float32MultiArray
 from geometry_msgs.msg import Twist
+from tello_msgs.msg import PS4Buttons
 
 import time
 
@@ -42,6 +43,9 @@ class Controller(Node):
         # PS4 Controller subscriber
         self.ps4_cmd_vel_sub = self.create_subscription(Twist, '/ps4_cmd_vel', self.ps4_cmd_vel_callback, 10)
 
+        # PS4 Buttons subscriber
+        self.ps4_btn_sub = self.create_subscription(PS4Buttons, '/ps4_btn', self.ps4_btn_callback, 10)
+
         # activate ps4 controller
         self.ps4controller = False
 
@@ -50,6 +54,9 @@ class Controller(Node):
 
         # Current mode
         self.current_mode = "Default"
+
+        # Flip triggered
+        self.fliptriggered = False
 
         self.latest_emotion = None
         self.notperformed = True
@@ -174,6 +181,79 @@ class Controller(Node):
             self.key_pressed["right"] = msg.linear.y
             self.key_pressed["forward"] = msg.linear.x
             self.key_pressed["cw"] = msg.angular.z
+
+    def ps4_btn_callback(self, msg):
+        """Callback for ps4 controller button updates."""
+
+        if self.current_mode == "PS4":
+
+            if msg.buttons[0] == 1:
+                self._takeoff_pub.publish(Empty())
+
+            if msg.buttons[1] == 1:
+                self._land_pub.publish(Empty())
+
+            if msg.buttons[9] == 1:
+                self.ps4controller = False
+                self.set_control_mode("Default")
+
+            if msg.buttons[13] == 1 and self.fliptriggered == False:
+                msg = FlipControl()
+                msg.flip_forward = False
+                msg.flip_backward = True
+                msg.flip_left = False
+                msg.flip_right = False
+                self._flip_control_pub.publish(msg)
+                self.fliptriggered = True
+
+                return
+            
+            if msg.buttons[14] == 1 and self.fliptriggered == False:
+                msg = FlipControl()
+                msg.flip_forward = True
+                msg.flip_backward = False
+                msg.flip_left = False
+                msg.flip_right = False
+                self._flip_control_pub.publish(msg)
+                self.fliptriggered = True
+
+                return
+            
+            if msg.buttons[15] == 1 and self.fliptriggered == False:
+                msg = FlipControl()
+                msg.flip_forward = False
+                msg.flip_backward = False
+                msg.flip_left = False
+                msg.flip_right = True
+                self._flip_control_pub.publish(msg)
+                self.fliptriggered = True
+
+                return
+            
+            if msg.buttons[16] == 1 and self.fliptriggered == False:
+                msg = FlipControl()
+                msg.flip_forward = False
+                msg.flip_backward = False
+                msg.flip_left = True
+                msg.flip_right = False
+                self._flip_control_pub.publish(msg)
+                self.fliptriggered = True
+
+                return
+
+            if self.fliptriggered:
+                msg = FlipControl()
+                msg.flip_forward = False
+                msg.flip_backward = False
+                msg.flip_left = False
+                msg.flip_right = False
+                self._flip_control_pub.publish(msg)
+                self.fliptriggered = False
+
+                return
+ 
+
+
 
     def inclinometer_callback(self, msg):
         """Process inclinometer data and map it to drone movement."""

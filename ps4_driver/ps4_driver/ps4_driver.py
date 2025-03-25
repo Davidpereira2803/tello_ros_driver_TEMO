@@ -26,30 +26,25 @@ class PS4Driver(Node):
         def apply_dead_zone(value):
             return value if abs(value) > dead_zone else 0.0
 
-        twist.linear.x = apply_dead_zone(msg.axes[1]) * 0.5
-        twist.linear.y = apply_dead_zone(msg.axes[0]) * 0.5
-        twist.linear.z = apply_dead_zone(msg.axes[4]) * 0.5
+        twist.linear.x = apply_dead_zone(msg.axes[1]) * 1.0
+        twist.linear.y = apply_dead_zone(msg.axes[0]) * 1.0
+        twist.linear.z = apply_dead_zone(msg.axes[4]) * 1.0
         twist.angular.z = apply_dead_zone(msg.axes[3]) * 1.0
 
         self.twist_publisher_.publish(twist)
 
+
+        buttons = list(msg.buttons) 
+
+        buttons += [
+            1 if msg.axes[7] == -1.0 else 0,
+            1 if msg.axes[7] == 1.0 else 0,
+            1 if msg.axes[6] == -1.0 else 0,
+            1 if msg.axes[6] == 1.0 else 0 
+        ]
+
         buttons_msg = PS4Buttons()
-        buttons_msg.buttons = msg.buttons
+        buttons_msg.buttons = buttons
         self.btn_publisher_.publish(buttons_msg)
 
-        """
-        if not self.prev_buttons:
-            self.prev_buttons = msg.buttons
-            return
-
-        if msg.buttons[0] == 1 and self.prev_buttons[0] == 0:
-            self.get_logger().info(f"PS4 Takeoff")
-            self.takeoff_publisher.publish(Empty())
-
-        if msg.buttons[1] == 1 and self.prev_buttons[1] == 0:
-            self.get_logger().info(f"PS4 Land")
-            self.land_publisher.publish(Empty())
         
-
-        self.prev_buttons = msg.buttons
-        """
