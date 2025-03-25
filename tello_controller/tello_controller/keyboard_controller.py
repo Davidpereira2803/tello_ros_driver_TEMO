@@ -7,7 +7,7 @@ from std_msgs.msg import Empty, String, Float32MultiArray
 from geometry_msgs.msg import Twist
 from tello_msgs.msg import PS4Buttons
 
-import time
+import sys
 
 
 
@@ -131,7 +131,10 @@ class Controller(Node):
         print("shift + k: flip backwards right")
         print("--------------------------------------------")
 
+        sys.stdout.flush() 
+
     def begin(self):
+        self.print_controls()
         self.init_pub()
         self.init_timers()
         self._keyboard_listener.start()

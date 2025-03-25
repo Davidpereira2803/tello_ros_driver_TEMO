@@ -4,8 +4,7 @@ from rclpy.node import Node
 from std_msgs.msg import Float32MultiArray
 import socket
 
-# UDP Settings
-ESP32_IP = "0.0.0.0"
+ESP32_IP = "192.168.4.2"
 ESP32_PORT = 8888
 
 class ESP32Publisher(Node):
