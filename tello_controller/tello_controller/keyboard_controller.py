@@ -169,7 +169,7 @@ class Controller(Node):
         """Callback for ps4 controller updates."""
 
         if self.ps4controller:
-            self.get_logger().info(f"Received ps4 command: {msg}") 
+            #self.get_logger().info(f"Received ps4 command: {msg}") 
             self.key_pressed["th"] = msg.linear.z
             self.key_pressed["right"] = msg.linear.y
             self.key_pressed["forward"] = msg.linear.x
@@ -481,21 +481,21 @@ class Controller(Node):
             if key.char == "3":
                 if self.ps4controller == False:
                     self.handmotion = True
-                    self.current_mode("MPU")
+                    self.set_control_mode("MPU")
             # Deactivate Hand Motion Control with MPU
             if key.char == "4":
                 self.handmotion = False
-                self.current_mode("Default")
+                self.set_control_mode("Default")
 
             # Activate PS4 Controller
             if key.char == "5":
                 if self.handmotion == False:
                    self.ps4controller = True
-                   self.current_mode("PS4")
+                   self.set_control_mode("PS4")
             # Deactivate PS4 Controller
             if key.char == "6":
                 self.ps4controller = False
-                self.current_mode("Default")
+                self.set_control_mode("Default")
      
 
             if key.char == "w":
