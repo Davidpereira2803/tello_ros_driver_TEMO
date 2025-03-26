@@ -86,7 +86,7 @@ class TelloGUI(Node, QWidget):
 
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.ros_spin)
-        self.timer.start(100)
+        self.timer.start(16)
 
     def update_mode(self, msg):
         """ Update current mode display """
