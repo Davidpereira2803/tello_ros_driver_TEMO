@@ -5,6 +5,8 @@ from PyQt6.QtGui import QPixmap, QImage
 from PyQt6.QtCore import Qt, QTimer
 from sensor_msgs.msg import BatteryState, Image
 from std_msgs.msg import Float32MultiArray, String
+from tello_msgs.msg import ModeStatus
+
 import numpy as np
 from cv_bridge import CvBridge
 
@@ -33,6 +35,12 @@ class TelloGUI(Node, QWidget):
         video_layout.addWidget(self.video_label)
 
         right_layout = QVBoxLayout()
+        self.current_mode_label = QLabel("Current Mode: Default")
+        self.current_mode_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        self.emotion_enabled_label = QLabel("Emotion Detection: Disabled")
+        self.emotion_enabled_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
         self.battery_label = QLabel("Battery: %")
         self.battery_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
@@ -55,6 +63,8 @@ class TelloGUI(Node, QWidget):
         self.emotion_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         right_layout.addStretch(1)  
+        right_layout.addWidget(self.current_mode_label)
+        right_layout.addWidget(self.emotion_enabled_label)
         right_layout.addWidget(self.battery_label)
         right_layout.addWidget(self.mpu_label)
         right_layout.addWidget(self.flying_status_label)
@@ -68,14 +78,32 @@ class TelloGUI(Node, QWidget):
         
         self.setLayout(main_layout)
 
-        self.create_subscription(BatteryState, '/battery_state', self.update_battery, 10)
-        self.create_subscription(Image, '/camera/image_raw', self.update_video_feed, 10)
-        self.create_subscription(Float32MultiArray, '/esp32/inclinometer', self.update_mpu, 10)
+        self.battery_sub =self.create_subscription(BatteryState, '/battery_state', self.update_battery, 10)
+        self.video_sub = self.create_subscription(Image, '/camera/image_raw', self.update_video_feed, 10)
+        self.inclinometer_sub = self.create_subscription(Float32MultiArray, '/esp32/inclinometer', self.update_mpu, 10)
         self.emotion_sub = self.create_subscription(String, '/detected_emotion', self.update_emotions, 10)
+        self.emotion_enabled_sub = self.create_subscription(ModeStatus, '/control_mode_status', self.update_mode, 10)
 
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.ros_spin)
         self.timer.start(100)
+
+    def update_mode(self, msg):
+        """ Update current mode display """
+        mode_map = {
+            0: "Default",
+            1: "MPU",
+            2: "PS4"
+        }
+        emotion_map = {
+            0: "Disabled",
+            1: "Enabled"
+        }
+
+        mode_str = mode_map.get(msg.mode, "Unknown")
+        emotion_enabled = emotion_map.get(msg.emotion_enabled, "Unknown")        
+        self.current_mode_label.setText(f"Current Mode: {mode_str}")
+        self.emotion_enabled_label.setText(f"Emotion Detection: {emotion_enabled}")
 
     def update_battery(self, msg):
         """ Update battery status display """

@@ -35,7 +35,7 @@ from tf2_ros.transform_broadcaster import TransformBroadcaster
 from sensor_msgs.msg import Image, BatteryState
 from geometry_msgs.msg import Twist
 from std_msgs.msg import Empty, Int32
-from tello_msgs.msg import FlightStats, FlipControl
+from tello_msgs.msg import FlightStats, FlipControl, ModeStatus
 
 from tello_driver.serializers import (
     create_tf_between_odom_drone,
@@ -135,6 +135,8 @@ class TelloRosWrapper(Node):
         self.begin()
         # Publisher for detected emotion
         self.emotion_pub = self.create_publisher(String, '/detected_emotion', 10)
+        self.emotion_enabled_sub = self.create_subscription(ModeStatus, '/control_mode_status', self.emotion_enabled_callback, 10)
+        self.emotion_enabled = "Disabled"
 
     def begin(self) -> None:
         """Start all the necessary components of the node."""
@@ -440,6 +442,11 @@ class TelloRosWrapper(Node):
             f"Battery percentage: {self._current_battery_percentage}%"
         )
 
+    def emotion_enabled_callback(self, msg: ModeStatus):
+        """Callback for the emotion enabled subscriber."""
+        self.emotion_enabled = msg.emotion_enabled      
+
+
     def _camera_image_callback(self) -> None:
         """Callback for the camera image subscriber with emotion detection."""
         video_stream = self.tello.get_video_stream()
@@ -461,7 +468,7 @@ class TelloRosWrapper(Node):
 
             frame_count += 1
 
-            if frame_count % 9 == 0:
+            if frame_count % 9 == 0 and self.emotion_enabled == ModeStatus.ENABLED:
 
                 # Emotion detection starts here
                 gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)

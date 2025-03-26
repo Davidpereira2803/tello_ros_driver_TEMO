@@ -5,7 +5,7 @@ from pynput import keyboard
 from tello_msgs.msg import FlipControl
 from std_msgs.msg import Empty, String, Float32MultiArray
 from geometry_msgs.msg import Twist
-from tello_msgs.msg import PS4Buttons
+from tello_msgs.msg import PS4Buttons, ModeStatus
 
 import sys
 
@@ -164,12 +164,28 @@ class Controller(Node):
             10
         )
 
-    def set_control_mode(self, mode: str):
+        self.control_mode_pub_msg = self.create_publisher(
+            ModeStatus, '/control_mode_status',
+            10
+        )
+
+    def set_control_mode(self, mode: str, emotion_enabled: bool):
         if self.current_mode != mode:
             self.current_mode = mode
-            msg = String()
-            msg.data = mode
-            self.control_mode_pub.publish
+            msg_str = String()
+            msg_str.data = mode
+            self.control_mode_pub.publish(msg_str)
+
+        msg_status = ModeStatus()
+        mode_map = {
+            "Default": ModeStatus.DEFAULT,
+            "MPU": ModeStatus.MPU,
+            "PS4": ModeStatus.PS4
+        }
+
+        msg_status.mode = mode_map.get(mode, ModeStatus.DEFAULT)
+        msg_status.emotion_enabled = ModeStatus.ENABLED if emotion_enabled else ModeStatus.DISABLED
+        self.control_mode_pub_msg.publish(msg_status)
 
     def emotion_callback(self, msg):
         """Callback for emotion updates."""
@@ -303,10 +319,9 @@ class Controller(Node):
     
     def emotion_reactions(self):
         """Function to perfrom the emotion related reactions"""
-        if self.latest_emotion:
-            self.get_logger().info(f"Latest Emotion: {self.latest_emotion}")
-
-            if self.emotionactive:
+        if self.emotionactive:
+            if self.latest_emotion:
+                self.get_logger().info(f"Latest Emotion: {self.latest_emotion}")
 
                 # Happy
                 if self.happyperforming or (self.notperformed and (self.latest_emotion == "Happy")):
@@ -513,9 +528,8 @@ class Controller(Node):
 
                     return
 
-
-        else:
-            self.get_logger().info("No emotion yet.")
+            else:
+                self.get_logger().info("No emotion yet.")
 
     def on_press(self, key):
         print(f"pressing the key {key}")
@@ -555,30 +569,32 @@ class Controller(Node):
             if key.char == "1":
                 self.emotionactive = True
                 self.notperformed = True
+                self.set_control_mode(self.current_mode, self.emotionactive)
             # Deactivate Emotion Reaction
             if key.char == "2":
                 self.emotionactive = False
                 self.notperformed = False
+                self.set_control_mode(self.current_mode, self.emotionactive)
 
             # Activate Hand Motion Control with MPU
             if key.char == "3":
                 if self.ps4controller == False:
                     self.handmotion = True
-                    self.set_control_mode("MPU")
+                    self.set_control_mode("MPU", self.emotionactive)
             # Deactivate Hand Motion Control with MPU
             if key.char == "4":
                 self.handmotion = False
-                self.set_control_mode("Default")
+                self.set_control_mode("Default", self.emotionactive)
 
             # Activate PS4 Controller
             if key.char == "5":
                 if self.handmotion == False:
                    self.ps4controller = True
-                   self.set_control_mode("PS4")
+                   self.set_control_mode("PS4", self.emotionactive)
             # Deactivate PS4 Controller
             if key.char == "6":
                 self.ps4controller = False
-                self.set_control_mode("Default")
+                self.set_control_mode("Default", self.emotionactive)
      
 
             if key.char == "w":
