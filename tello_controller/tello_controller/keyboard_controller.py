@@ -5,7 +5,7 @@ from pynput import keyboard
 from tello_msgs.msg import FlipControl
 from std_msgs.msg import Empty, String, Float32MultiArray
 from geometry_msgs.msg import Twist
-from tello_msgs.msg import PS4Buttons, ModeStatus
+from tello_msgs.msg import PS4Buttons, ModeStatus, FacePosition
 
 import sys
 
@@ -33,6 +33,9 @@ class Controller(Node):
         )
         self.shift_key_pressed = False
         self.shutdown = False
+
+        # Face position subscriber
+        self.face_position_sub = self.create_subscription(FacePosition, '/face_position', self.face_position_callback, 1)
 
         # Detected emotion subscriber
         self.emotion_sub = self.create_subscription(String, '/detected_emotion', self.emotion_callback, 10)
@@ -186,6 +189,38 @@ class Controller(Node):
         msg_status.mode = mode_map.get(mode, ModeStatus.DEFAULT)
         msg_status.emotion_enabled = ModeStatus.ENABLED if emotion_enabled else ModeStatus.DISABLED
         self.control_mode_pub_msg.publish(msg_status)
+
+
+    def face_position_callback(self, msg):
+        """Callback for face position updates."""
+        face_area = msg.face_area
+        x_offset = msg.x_offset
+        y_offset = msg.y_offset
+        
+        if x_offset < 0:
+            print("Move LEFT")
+        elif x_offset > 0:
+            print("Move RIGHT")
+        else:
+            print("X position OK")
+
+        if y_offset < 0:
+            print("Move DOWN")
+        elif y_offset > 0:
+            print("Move UP")
+        else:
+            print("Y position OK")
+
+        desired_area = 10000
+
+        if face_area < desired_area * 0.4:
+            print("Move FORWARD")
+        elif face_area > desired_area * 1.6:
+            print("Move BACKWARD")
+        else:
+            print("Distance OK")
+
+        print("---")
 
     def emotion_callback(self, msg):
         """Callback for emotion updates."""
