@@ -35,7 +35,7 @@ from tf2_ros.transform_broadcaster import TransformBroadcaster
 from sensor_msgs.msg import Image, BatteryState
 from geometry_msgs.msg import Twist
 from std_msgs.msg import Empty, Int32
-from tello_msgs.msg import FlightStats, FlipControl, ModeStatus
+from tello_msgs.msg import FlightStats, FlipControl, ModeStatus, FacePosition
 
 from tello_driver.serializers import (
     create_tf_between_odom_drone,
@@ -46,7 +46,9 @@ from tello_driver.serializers import (
 )
 
 # Include model files
-face_classifier = cv2.CascadeClassifier(r'/home/david/Projects/TEMO_ros_ws/src/tello_ros_driver_TEMO/haarcascade_frontalface_default.xml')
+#face_classifier = cv2.CascadeClassifier(r'/home/david/Projects/TEMO_ros_ws/src/tello_ros_driver_TEMO/haarcascade_frontalface_default.xml')
+face_classifier = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+
 classifier = load_model(r'/home/david/Projects/TEMO_ros_ws/src/tello_ros_driver_TEMO/model.h5')
 
 emotion_labels = ['Angry','Disgust','Fear','Happy','Neutral', 'Sad', 'Surprise']
@@ -135,7 +137,10 @@ class TelloRosWrapper(Node):
         self.begin()
         # Publisher for detected emotion
         self.emotion_pub = self.create_publisher(String, '/detected_emotion', 10)
+        self.face_position_pub = self.create_publisher(FacePosition, '/face_position', 10)
+
         self.emotion_enabled_sub = self.create_subscription(ModeStatus, '/control_mode_status', self.emotion_enabled_callback, 10)
+
         self.emotion_enabled = "Disabled"
 
     def begin(self) -> None:
@@ -456,6 +461,8 @@ class TelloRosWrapper(Node):
 
         frame_count = 0
 
+        rect_width, rect_height = 300, 300
+
         for frame in container.decode(video=0):
             # Convert PyAV frame => PIL image => OpenCV image
             image = np.array(frame.to_image())
@@ -466,17 +473,39 @@ class TelloRosWrapper(Node):
                 interpolation=cv2.INTER_LINEAR,
             )
 
+            height, width = image.shape[:2]
+            center_x, center_y = width // 2, height // 2
+            rect_left = center_x - rect_width // 2
+            rect_top = center_y - rect_height // 2
+            rect_right = center_x + rect_width // 2
+            rect_bottom = center_y + rect_height // 2
+
+            cv2.rectangle(image, (rect_left, rect_top), (rect_right, rect_bottom), (0, 0, 255), 2)
+
             frame_count += 1
 
-            if frame_count % 9 == 0 and self.emotion_enabled == ModeStatus.ENABLED:
+            if frame_count % 9 == 0:
 
                 # Emotion detection starts here
                 gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-                faces = face_classifier.detectMultiScale(gray)
+                faces = face_classifier.detectMultiScale(gray, scaleFactor=1.1,minNeighbors=5)
 
                 for (x, y, w, h) in faces:
                     # Draw rectangle around detected face
                     cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 255), 2)
+
+                    face_center_x = x + w // 2
+                    face_center_y = y + h // 2
+
+                    x_offset = face_center_x - center_x
+                    y_offset = face_center_y - center_y
+                    face_area = w * h
+
+                    msg = FacePosition()
+                    msg.x_offset = int(x_offset)
+                    msg.y_offset = int(y_offset)
+                    msg.face_area = int(face_area)
+                    self.face_position_pub.publish(msg)
 
                     roi_gray = gray[y:y + h, x:x + w]
                     roi_gray = cv2.resize(roi_gray, (48, 48), interpolation=cv2.INTER_AREA)

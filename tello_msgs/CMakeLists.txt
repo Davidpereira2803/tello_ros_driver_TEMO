@@ -25,6 +25,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/FlipControl.msg"
   "msg/PS4Buttons.msg"
   "msg/ModeStatus.msg"
+  "msg/FacePosition.msg"
 )
 
 ament_package()
