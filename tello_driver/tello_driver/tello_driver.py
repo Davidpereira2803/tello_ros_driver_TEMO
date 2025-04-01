@@ -484,7 +484,7 @@ class TelloRosWrapper(Node):
 
             frame_count += 1
 
-            if frame_count % 9 == 0:
+            if frame_count % 9 == 0 and self.emotion_enabled == ModeStatus.ENABLED:
 
                 # Emotion detection starts here
                 gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)

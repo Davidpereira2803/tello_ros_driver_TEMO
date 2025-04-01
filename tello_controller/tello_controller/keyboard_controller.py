@@ -196,31 +196,41 @@ class Controller(Node):
         face_area = msg.face_area
         x_offset = msg.x_offset
         y_offset = msg.y_offset
+
+        if self.emotionactive:
         
-        if x_offset < 0:
-            print("Move LEFT")
-        elif x_offset > 0:
-            print("Move RIGHT")
-        else:
-            print("X position OK")
+            if x_offset < 130:
+                self.get_logger().info("Move LEFT")
+                self.key_pressed["cw"] = 1.0
+            elif x_offset > -130:
+                self.get_logger().info("Move RIGHT")
+                self.key_pressed["cw"] = -1.0
+            else:
+                self.get_logger().info("X position OK")
+                self.key_pressed["cw"] = 0.0
 
-        if y_offset < 0:
-            print("Move DOWN")
-        elif y_offset > 0:
-            print("Move UP")
-        else:
-            print("Y position OK")
+            if y_offset < -130:
+                self.get_logger().info("Move DOWN")
+                self.key_pressed["th"] = -1.0
+            elif y_offset > 130:
+                self.get_logger().info("Move UP")
+                self.key_pressed["th"] = 1.0
+            else:
+                self.get_logger().info("Y position OK")
+                self.key_pressed["th"] = 0.0
 
-        desired_area = 10000
+            desired_area = 10000
 
-        if face_area < desired_area * 0.4:
-            print("Move FORWARD")
-        elif face_area > desired_area * 1.6:
-            print("Move BACKWARD")
-        else:
-            print("Distance OK")
+            if face_area < desired_area * 0.4:
+                self.get_logger().info("Move FORWARD")
+                self.key_pressed["forward"] = 1.0
+            elif face_area > desired_area * 1.6:
+                self.get_logger().info("Move BACKWARD")
+                self.key_pressed["forward"] = -1.0
+            else:
+                self.get_logger().info("Distance OK")
+                self.key_pressed["forward"] = 0.0
 
-        print("---")
 
     def emotion_callback(self, msg):
         """Callback for emotion updates."""
