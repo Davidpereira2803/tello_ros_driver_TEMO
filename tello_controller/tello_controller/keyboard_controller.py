@@ -199,36 +199,26 @@ class Controller(Node):
 
         if self.emotionactive:
         
-            if x_offset < 130:
-                self.get_logger().info("Move LEFT")
-                self.key_pressed["cw"] = 1.0
-            elif x_offset > -130:
-                self.get_logger().info("Move RIGHT")
+            if x_offset > 130:
                 self.key_pressed["cw"] = -1.0
+            elif x_offset < -130:
+                self.key_pressed["cw"] = 1.0
             else:
-                self.get_logger().info("X position OK")
                 self.key_pressed["cw"] = 0.0
 
             if y_offset < -130:
-                self.get_logger().info("Move DOWN")
                 self.key_pressed["th"] = -1.0
             elif y_offset > 130:
-                self.get_logger().info("Move UP")
                 self.key_pressed["th"] = 1.0
             else:
-                self.get_logger().info("Y position OK")
                 self.key_pressed["th"] = 0.0
 
-            desired_area = 10000
 
-            if face_area < desired_area * 0.4:
-                self.get_logger().info("Move FORWARD")
+            if face_area < 5000:
                 self.key_pressed["forward"] = 1.0
-            elif face_area > desired_area * 1.6:
-                self.get_logger().info("Move BACKWARD")
+            elif face_area > 25000:
                 self.key_pressed["forward"] = -1.0
             else:
-                self.get_logger().info("Distance OK")
                 self.key_pressed["forward"] = 0.0
 
 
