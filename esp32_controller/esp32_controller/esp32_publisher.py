@@ -9,15 +9,9 @@ import time
 ESP32_IP = "192.168.4.2"
 ESP32_PORT = 8888
 
-TAKEOFF_THRESHOLD = 80
-LAND_THRESHOLD = -80
+TAKEOFF_THRESHOLD = 0.9
+LAND_THRESHOLD = -0.9
 TAKEOFFLAND_HOLD_TIME = 1
-
-UP_ACCEL_THRESHOLD = 0.1
-DOWN_ACCEL_THRESHOLD = -0.1
-MOVEMENT_COOLDOWN = 1
-
-MOVEMENT_HOLD_TIME = 0.3
 
 class ESP32Publisher(Node):
     def __init__(self):
@@ -44,12 +38,6 @@ class ESP32Publisher(Node):
             self.land_triggered = False
             self.takeoff_start_time = None
             self.land_start_time = None
-            self.last_up_time = 0
-            self.last_down_time = 0
-            self.up_detected_time = 0
-            self.down_detected_time = 0
-            self.upward_movement = False
-            self.downward_movement = False
             self.receive_data()
 
     def receive_data(self):
@@ -69,35 +57,20 @@ class ESP32Publisher(Node):
                 gz = float(parts[5].split(":")[1])
 
 
-                roll = self.compute_roll(ax, ay, az)
-                pitch = self.compute_pitch(ax, ay, az)
+                roll = ax
+                pitch = ay
+                up_down_movement = az
 
                 self.take_off(pitch)    
                 self.land(pitch)
 
-                self.detect_up_down(az)
-
                 msg = Float32MultiArray()
-                msg.data = [roll, pitch, self.takeoff_triggered, self.land_triggered, self.upward_movement, self.downward_movement]
+                msg.data = [roll, pitch, self.takeoff_triggered, self.land_triggered, up_down_movement]
 
                 self.publisher_.publish(msg)
 
             except Exception as e:
                 self.get_logger().error(f"Error receiving ESP32 data: {e}")
-
-    def compute_pitch(self, ax, ay, az):
-        """
-        Compute pitch angle from accelerometer data.
-        ax, ay, az: Accelerometer readings (in g)
-        Returns pitch angle in degrees.
-        """
-        return -math.degrees(math.atan2(-ay, -az))
-    
-    def compute_roll(self, ax, ay, az):
-        """Compute roll angle from accelerometer data."""
-        roll_rad = math.atan2(-ax, math.sqrt(ay**2 + az**2))
-        roll_deg = math.degrees(roll_rad)
-        return roll_deg
     
     def take_off(self, pitch):
         """Publish takeoff message."""
@@ -122,20 +95,3 @@ class ESP32Publisher(Node):
                     self.takeoff_triggered = False
             else:
                 self.land_start_time = None
-
-    def detect_up_down(self, az):
-        """Detect upward and downward movement."""
-        current_time = time.time()
-
-        delta_az = az - (-1)
-
-        if delta_az > UP_ACCEL_THRESHOLD and (current_time - self.last_up_time) > MOVEMENT_COOLDOWN:
-            self.last_up_time = current_time
-            self.up_detected_time = current_time
-
-        elif delta_az < DOWN_ACCEL_THRESHOLD and (current_time - self.last_down_time) > MOVEMENT_COOLDOWN:
-            self.last_down_time = current_time
-            self.down_detected_time = current_time
-
-        self.upward_movement = (current_time - self.up_detected_time) < MOVEMENT_HOLD_TIME
-        self.downward_movement = (current_time - self.down_detected_time) < MOVEMENT_HOLD_TIME

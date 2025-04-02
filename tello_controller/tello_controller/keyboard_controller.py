@@ -231,15 +231,25 @@ class Controller(Node):
 
         if self.ps4controller:
             #self.get_logger().info(f"Received ps4 command: {msg}") 
-            self.key_pressed["th"] = msg.linear.z
-            self.key_pressed["right"] = msg.linear.y
-            self.key_pressed["forward"] = msg.linear.x
-            self.key_pressed["cw"] = msg.angular.z
+            self.key_pressed["th"] = msg.linear.z * self.speed
+            self.key_pressed["right"] = msg.linear.y * self.speed
+            self.key_pressed["forward"] = msg.linear.x * self.speed
+            self.key_pressed["cw"] = msg.angular.z * self.speed
 
     def ps4_btn_callback(self, msg):
         """Callback for ps4 controller button updates."""
 
         if self.current_mode == "PS4":
+
+            if msg.buttons[5] == 1:
+                self.speed += 0.1
+                if self.speed > 1:
+                    self.speed = 1
+            
+            if msg.buttons[6] == 1:
+                self.speed -= 0.1
+                if self.speed < 0.1:
+                    self.speed = 0.1
 
             if msg.buttons[0] == 1:
                 self._takeoff_pub.publish(Empty())
@@ -313,43 +323,49 @@ class Controller(Node):
         """Process inclinometer data and map it to drone movement."""
         roll = msg.data[0]
         pitch = msg.data[1]
-        yaw = msg.data[2]
-        #updown = msg.data[3]
-        takeoff = msg.data[3]
-        land = msg.data[4]
+        takeoff = msg.data[2]
+        land = msg.data[3]
+        up_down = msg.data[4]
 
-        left_right = max(-1.0, min(1.0, roll * 0.05))
-        forward_backward = max(-1.0, min(1.0, pitch * 0.05))
-        clockwise = max(-1.0, min(1.0, yaw * 0.05))
-        #up_down = max(-1.0, min(1.0, updown))
 
-        if abs(left_right) < 0.1:
+        left_right = roll
+        forward_backward = pitch
+        #clockwise = max(-1.0, min(1.0, yaw * 0.05))
+        
+        if up_down > 1.15:
+            z_movement = 1.0
+        elif up_down < 0.85:
+            z_movement = -1.0
+        else:
+            z_movement = 0.0
+
+        if abs(left_right) < 0.2:
             left_right = 0.0
-        if abs(forward_backward) < 0.1:
+        if abs(forward_backward) < 0.2 or abs(forward_backward) > 0.85:
             forward_backward = 0.0
-        if abs(clockwise) < 0.1:
-            clockwise = 0.0
+        #if abs(clockwise) < 0.1:
+        #    clockwise = 0.0
 
         if self.handmotion:
-            self.get_logger().info(f"Received roll: {roll}, pitch: {pitch}, yaw: {yaw}")
-            self.key_pressed["right"] = left_right
-            self.key_pressed["forward"] = forward_backward
-            self.key_pressed["cw"] = -clockwise
-            #self.key_pressed["th"] = up_down
+            self.get_logger().info(f"Received roll: {roll}, pitch: {pitch}")
+            self.key_pressed["right"] = -left_right
+            self.key_pressed["forward"] = -forward_backward
+            #self.key_pressed["cw"] = -clockwise
+            self.key_pressed["th"] = z_movement
 
-        if takeoff:
-            self.get_logger().info(f"Drone is about to take off!")
-            self._takeoff_pub.publish(Empty())
-            self.key_pressed["right"] = left_right
-            self.key_pressed["forward"] = forward_backward
-            self.key_pressed["cw"] = clockwise
-        
-        if land:
-            self.get_logger().info(f"Drone is about to land!")
-            self._land_pub.publish(Empty())
-            self.key_pressed["right"] = left_right
-            self.key_pressed["forward"] = forward_backward
-            self.key_pressed["cw"] = clockwise
+            if takeoff:
+                self.get_logger().info(f"Drone is about to take off!")
+                self._takeoff_pub.publish(Empty())
+                self.key_pressed["right"] = left_right
+                self.key_pressed["forward"] = forward_backward
+                #self.key_pressed["cw"] = clockwise
+            
+            if land:
+                self.get_logger().info(f"Drone is about to land!")
+                self._land_pub.publish(Empty())
+                self.key_pressed["right"] = left_right
+                self.key_pressed["forward"] = forward_backward
+                #self.key_pressed["cw"] = clockwise
 
     
     def emotion_reactions(self):

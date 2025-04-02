@@ -138,8 +138,8 @@ class TelloGUI(Node, QWidget):
 
     def reset_flying_status(self):
         """ Reset flying status label color after 2 second timeout """
-        self.status_label.setText("Status: Idle")
-        self.status_label.setStyleSheet("background-color: black; color: white; border-radius: 5px; padding: 5px; font-size: 16px;")
+        self.flying_status_label.setText("Status: Idle")
+        self.flying_status_label.setStyleSheet("background-color: black; color: white; border-radius: 5px; padding: 5px; font-size: 16px;")
 
     def update_video_feed(self, msg):
         """ Update video feed display """
