@@ -60,12 +60,13 @@ class ESP32Publisher(Node):
                 roll = ax
                 pitch = ay
                 up_down_movement = az
+                yaw = gz
 
                 self.take_off(pitch)    
                 self.land(pitch)
 
                 msg = Float32MultiArray()
-                msg.data = [roll, pitch, self.takeoff_triggered, self.land_triggered, up_down_movement]
+                msg.data = [roll, pitch, self.takeoff_triggered, self.land_triggered, up_down_movement, yaw]
 
                 self.publisher_.publish(msg)
 
