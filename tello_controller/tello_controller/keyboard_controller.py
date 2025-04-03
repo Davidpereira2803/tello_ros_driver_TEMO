@@ -332,15 +332,15 @@ class Controller(Node):
         forward_backward = pitch
         
         if yaw < -5 and (abs(left_right) < 0.2 and abs(forward_backward) < 0.2 and up_down < 1.1 and up_down > 0.9):
-            clockwise = 1.0
-        elif yaw > 5 and (abs(left_right) < 0.2 and abs(forward_backward) < 0.2 and up_down < 1.1 and up_down > 0.9):
             clockwise = -1.0
+        elif yaw > 5 and (abs(left_right) < 0.2 and abs(forward_backward) < 0.2 and up_down < 1.1 and up_down > 0.9):
+            clockwise = 1.0
         else:
             clockwise = 0.0
         
-        if up_down > 1.15 and (abs(left_right) < 0.1 and abs(forward_backward) < 0.1):
+        if up_down > 1.1 and (abs(left_right) < 0.2 and abs(forward_backward) < 0.2):
             z_movement = 1.0
-        elif up_down < 0.85 and (abs(left_right) < 0.1 and abs(forward_backward) < 0.1):
+        elif up_down < 0.9 and (abs(left_right) < 0.2 and abs(forward_backward) < 0.2):
             z_movement = -1.0
         else:
             z_movement = 0.0
