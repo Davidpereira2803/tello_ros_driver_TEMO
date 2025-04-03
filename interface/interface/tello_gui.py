@@ -114,15 +114,17 @@ class TelloGUI(Node, QWidget):
         """ Update mpu values display """
         roll = msg.data[0]
         pitch = msg.data[1]
-        yaw = msg.data[2]
-        takeoff = msg.data[3]
-        land = msg.data[4]
+        takeoff = msg.data[2]
+        land = msg.data[3]
+        updown = msg.data[4]
+        yaw = msg.data[5]
 
         self.mpu_label.setText(
             f"Received MPU Values:\n"
             f"Roll: {roll:.2f}\n"
             f"Pitch: {pitch:.2f}\n"
             f"Yaw: {yaw:.2f}\n"
+            f"Up Down: {updown:.2f}\n"
         )
 
         if takeoff != 0:
