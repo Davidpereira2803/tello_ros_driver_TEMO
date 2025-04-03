@@ -27,6 +27,8 @@ import numpy as np
 import csv
 from collections import deque, Counter
 from math import ceil
+import cv2.aruco as aruco
+import time
 
 # ROS messages
 from nav_msgs.msg import Odometry
@@ -480,12 +482,12 @@ class TelloRosWrapper(Node):
             rect_right = center_x + rect_width // 2
             rect_bottom = center_y + rect_height // 2
 
-            cv2.rectangle(image, (rect_left, rect_top), (rect_right, rect_bottom), (0, 0, 255), 2)
-
             frame_count += 1
 
             if frame_count % 9 == 0 and self.emotion_enabled == ModeStatus.ENABLED:
 
+                cv2.rectangle(image, (rect_left, rect_top), (rect_right, rect_bottom), (0, 0, 255), 2)
+                
                 # Emotion detection starts here
                 gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
                 faces = face_classifier.detectMultiScale(gray, scaleFactor=1.1,minNeighbors=5)
