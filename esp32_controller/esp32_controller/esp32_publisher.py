@@ -38,6 +38,13 @@ class ESP32Publisher(Node):
             self.land_triggered = False
             self.takeoff_start_time = None
             self.land_start_time = None
+            self.calibrated = False
+            self.calibration_values = {'roll': 0.0, 'pitch': 0.0}
+
+
+            if not self.calibrated:
+                self.calibration()
+
             self.receive_data()
 
     def receive_data(self):
@@ -57,8 +64,8 @@ class ESP32Publisher(Node):
                 gz = float(parts[5].split(":")[1])
 
 
-                roll = ax
-                pitch = ay
+                roll = ax - self.calibration_values['roll']
+                pitch = ay - self.calibration_values['pitch']
                 up_down_movement = az
                 yaw = gz
 
@@ -96,3 +103,34 @@ class ESP32Publisher(Node):
                     self.takeoff_triggered = False
             else:
                 self.land_start_time = None
+
+    def _wait_for_data(self):
+        """Wait for data from ESP32."""
+        while True:
+            try:
+                data, _ = self.sock.recvfrom(1024)
+                decoded_data = data.decode().strip()
+                parts = decoded_data.split(",")
+                ax = float(parts[0].split(":")[1])
+                ay = float(parts[1].split(":")[1])
+                return {'roll': ax, 'pitch': ay}
+            except:
+                continue
+
+    def calibration(self):
+        self.get_logger().info("Calibrating ESP32 sensor...")
+
+        self.get_logger().info(" Place the inclinometer in neutral PITCH position.")
+        time.sleep(5)
+        data = self._wait_for_data()
+        self.calibration_values['pitch'] = data['pitch']
+        self.get_logger().info(f"Pitch calibrated to {data['pitch']:.2f}")
+
+        self.get_logger().info("Place the inclinometer in neutral ROLL position.")
+        time.sleep(5)
+        data = self._wait_for_data()
+        self.calibration_values['roll'] = data['roll']
+        self.get_logger().info(f"Roll calibrated to {data['roll']:.2f}")
+
+        self.calibrated = True
+        self.get_logger().info("Calibration complete.")
