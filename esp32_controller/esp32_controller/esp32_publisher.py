@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import Float32MultiArray
+from std_msgs.msg import Float32MultiArray, Empty
 import socket
-import math
+import threading
 import time
 
 ESP32_IP = "192.168.4.2"
@@ -18,6 +18,8 @@ class ESP32Publisher(Node):
         super().__init__('esp32_publisher')
         
         self.publisher_ = self.create_publisher(Float32MultiArray, '/esp32/inclinometer', 10)
+
+        self.create_subscription(Empty, '/esp32/calibrate', self.trigger_calibration, 10)
         
         self.sock = None
         self.get_logger().info("Starting ESP32 UDP listener...")
@@ -38,18 +40,18 @@ class ESP32Publisher(Node):
             self.land_triggered = False
             self.takeoff_start_time = None
             self.land_start_time = None
-            self.calibrated = False
+            self.receive_data_active = True
             self.calibration_values = {'roll': 0.0, 'pitch': 0.0}
 
-
-            if not self.calibrated:
-                self.calibration()
-
-            self.receive_data()
+            self.receive_thread = threading.Thread(target=self.receive_data, daemon=True)
+            self.receive_thread.start()
 
     def receive_data(self):
         """Continuously receive UDP packets from ESP32 and publish to ROS2."""
         while rclpy.ok():
+            if not self.receive_data_active:
+                time.sleep(0.1)
+                continue
             try:
                 data, addr = self.sock.recvfrom(1024)
                 decoded_data = data.decode().strip()
@@ -104,6 +106,15 @@ class ESP32Publisher(Node):
             else:
                 self.land_start_time = None
 
+    def trigger_calibration(self, msg):
+        """Trigger calibration process."""
+        self.get_logger().info("Triggering calibration...")
+        self.receive_data_active = False
+        time.sleep(0.5)
+
+        self.calibration()
+        self.receive_data_active = True
+
     def _wait_for_data(self):
         """Wait for data from ESP32."""
         while True:
@@ -132,5 +143,4 @@ class ESP32Publisher(Node):
         self.calibration_values['roll'] = data['roll']
         self.get_logger().info(f"Roll calibrated to {data['roll']:.2f}")
 
-        self.calibrated = True
         self.get_logger().info("Calibration complete.")

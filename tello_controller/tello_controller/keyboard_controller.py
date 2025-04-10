@@ -172,6 +172,11 @@ class Controller(Node):
             10
         )
 
+        self.esp32_calibrate_pub = self.create_publisher(
+            Empty, '/esp32/calibrate',
+            10
+        )
+
     def set_control_mode(self, mode: str, emotion_enabled: bool):
         if self.current_mode != mode:
             self.current_mode = mode
@@ -316,6 +321,9 @@ class Controller(Node):
 
                 return
  
+
+    def calibration_callback(self):
+        """Callback for calibration updates."""
 
 
 
@@ -643,7 +651,15 @@ class Controller(Node):
             if key.char == "6":
                 self.ps4controller = False
                 self.set_control_mode("Default", self.emotionactive)
-     
+
+
+            # Calibrate Inclinometer
+            if key.char == "7":
+                self._land_pub.publish(Empty())
+                self.emotionactive = False
+                self.set_control_mode("Default", self.emotionactive)
+                self.get_logger().info("Calibrating Inclinometer...")
+                self.esp32_calibrate_pub.publish(Empty())                
 
             if key.char == "w":
                 self.key_pressed["forward"] = self.speed
