@@ -13,11 +13,17 @@ TAKEOFF_THRESHOLD = 0.9
 LAND_THRESHOLD = -0.9
 TAKEOFFLAND_HOLD_TIME = 1
 
+UP_THRESHOLD = 1.7
+DOWN_THRESHOLD = -1.7
+COOLDOWN_TIME = 1 
+
 class SmartphonePublisher(Node):
     def __init__(self):
         super().__init__('smartphone_publisher')
 
         self.inclinometer_pub = self.create_publisher(Float32MultiArray, '/smartphone/inclinometer', 10)
+
+        self.create_subscription(Empty, '/calibrate', self.trigger_calibration, 10)
 
         self.sock = None
         self.get_logger().info("Starting Smartphone UDP listener...")
@@ -34,47 +40,127 @@ class SmartphonePublisher(Node):
                 time.sleep(3)
 
         if self.sock:
-            self.receive_data()
+            self.last_command_time = 0
+            self.takeoff_triggered = False
+            self.land_triggered = False
+            self.takeoff_start_time = None
+            self.land_start_time = None
+            self.receive_data_active = True
+            self.calibration_values = {'roll': 0.0, 'pitch': 0.0}
+
+            self.receive_thread = threading.Thread(target=self.receive_data, daemon=True)
+            self.receive_thread.start()
 
         
     def receive_data(self):
+        """Receive data from the smartphone and publish it."""
         while rclpy.ok():
+            if not self.receive_data_active:
+                time.sleep(0.1)
+                continue
             try:
                 data, addr = self.sock.recvfrom(1024)
                 decoded_data = data.decode().strip()
                 self.get_logger().info(f"Received: {decoded_data}")
 
                 parts = decoded_data.split(",")
-                if len(parts) != 12:
-                    self.get_logger().error("Invalid data format. Expected 12 values.")
-                    continue
-
                 values = list(map(float, parts))
                 accel = values[:3]
-                gyro = values[3:6]
-                mag = values[6:9]
-                bar = values[9:12]
-                lin = values[12:15]
-                orient = values[15:18]
+                grav = values[3:6]
+                lin = values[6:9]
+                orient = values[9:12]
 
-                ax = accel[0]
-                ay = accel[1]
-                az = accel[2]
-                gx = gyro[0]
-                gy = gyro[1]
-                gz = gyro[2]
-                mx = mag[0]
-                my = mag[1]
-                mz = mag[2]
-                lx = lin[0]
-                ly = lin[1]
-                lz = lin[2]
+                roll = (orient[2] - self.calibration_values['roll']) * 0.1
+                pitch = (orient[1] - self.calibration_values['pitch']) * 0.1
+                yaw = orient[0]
+
+                self.take_off(pitch)
+                self.land(pitch)
+                up_down = self.process_linear_acc(lin[1], time.time())
 
                 msg = Float32MultiArray()
-                msg.data = [ax, ay, az, gx, gy, gz, mx, my, mz, lx, ly, lz]
+                msg.data = [roll, pitch, yaw, up_down]
                 self.inclinometer_pub.publish(msg)
 
             except Exception as e:
                 self.get_logger().error(f"Error receiving data: {e}")
+
+    def process_linear_acc(self, az, current_time):
+        """Process the linear acceleration data and determine the command."""
+        if current_time - self.last_command_time < COOLDOWN_TIME:
+            return 0.0
+
+        if az > UP_THRESHOLD:
+            self.last_command_time = current_time
+            return 1.0
+        elif az < DOWN_THRESHOLD:
+            self.last_command_time = current_time
+            return -1.0 
+        else:
+            return 0.0
+
+    def take_off(self, pitch):
+        """Publish takeoff message."""
+        if not self.takeoff_triggered:
+            if pitch > TAKEOFF_THRESHOLD:
+                if self.takeoff_start_time is None:
+                    self.takeoff_start_time = time.time()
+                elif time.time() - self.takeoff_start_time > TAKEOFFLAND_HOLD_TIME:
+                    self.takeoff_triggered = True
+                    self.land_triggered = False
+            else:
+                self.takeoff_start_time = None
             
+    def land(self, pitch):
+        """Publish land message."""
+        if not self.land_triggered and self.takeoff_triggered:
+            if pitch < LAND_THRESHOLD:
+                if self.land_start_time is None:
+                    self.land_start_time = time.time()
+                elif time.time() - self.land_start_time > TAKEOFFLAND_HOLD_TIME:
+                    self.land_triggered = True
+                    self.takeoff_triggered = False
+            else:
+                self.land_start_time = None
         
+    def trigger_calibration(self, msg):
+        """Trigger calibration process."""
+        self.get_logger().info("Triggering calibration...")
+        self.receive_data_active = False
+        time.sleep(0.5)
+
+        self.calibration()
+        self.receive_data_active = True
+
+    def _wait_for_data(self):
+        """Wait for data from Smartphone."""
+        while True:
+            try:
+                data, _ = self.sock.recvfrom(1024)
+                decoded_data = data.decode().strip()
+                parts = decoded_data.split(",")
+                values = list(map(float, parts))
+                accel = values[:3]
+                grav = values[3:6]
+                lin = values[6:9]
+                orient = values[9:12]
+                return {'roll': orient[2], 'pitch': orient[1]}
+            except:
+                continue
+
+    def calibration(self):
+        self.get_logger().info("Calibrating Inclinometer...")
+
+        self.get_logger().info(" Place the inclinometer in neutral PITCH position.")
+        time.sleep(5)
+        data = self._wait_for_data()
+        self.calibration_values['pitch'] = data['pitch']
+        self.get_logger().info(f"Pitch calibrated to {data['pitch']:.2f}")
+
+        self.get_logger().info("Place the inclinometer in neutral ROLL position.")
+        time.sleep(5)
+        data = self._wait_for_data()
+        self.calibration_values['roll'] = data['roll']
+        self.get_logger().info(f"Roll calibrated to {data['roll']:.2f}")
+
+        self.get_logger().info("Calibration complete.")

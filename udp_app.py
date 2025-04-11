@@ -39,11 +39,9 @@ while True:
     decoded = data.decode('utf-8').strip()
     values = list(map(float, decoded.split(',')))
     accel = values[:3]
-    gyro = values[3:6]
-    mag = values[6:9]
-    grav = values[9:12]
-    lin = values[12:15]
-    orient = values[15:18] # first value for yaw, second for pitch, third for roll
+    grav = values[3:6]
+    lin = values[6:9] # first value for x, second for y, third for z
+    orient = values[9:12] # first value for yaw, second for pitch, third for roll
 
     #a_z = ax * gx + ay * gy + az * gz
     a_z = accel[0] * grav[0] + accel[1] * grav[1] + accel[2] * grav[2]
@@ -51,10 +49,10 @@ while True:
 
 
     #print(f"Accel {accel}")
-    #process_linear_acc(az=lin[2], current_time=time.time())
+    process_linear_acc(az=lin[2], current_time=time.time())
     #print(f"Gyro {gyro}")
     #print(f"Mag {mag}")
-    print(f"grav {grav[1]}")
+    #print(f"grav {grav[1]}")
     #print(f"Accel {accel}, Gyro {gyro}, Mag {mag}")
 
 

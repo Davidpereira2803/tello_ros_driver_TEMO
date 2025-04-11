@@ -19,7 +19,7 @@ class ESP32Publisher(Node):
         
         self.publisher_ = self.create_publisher(Float32MultiArray, '/esp32/inclinometer', 10)
 
-        self.create_subscription(Empty, '/esp32/calibrate', self.trigger_calibration, 10)
+        self.create_subscription(Empty, '/calibrate', self.trigger_calibration, 10)
         
         self.sock = None
         self.get_logger().info("Starting ESP32 UDP listener...")

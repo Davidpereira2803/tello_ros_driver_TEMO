@@ -55,6 +55,9 @@ class Controller(Node):
         # activate hand motion control
         self.handmotion = False
 
+        # activate smartphone inclinometer
+        self.smartphone_inclinometer = False
+
         # Current mode
         self.current_mode = "Default"
 
@@ -172,8 +175,8 @@ class Controller(Node):
             10
         )
 
-        self.esp32_calibrate_pub = self.create_publisher(
-            Empty, '/esp32/calibrate',
+        self.calibrate_pub = self.create_publisher(
+            Empty, '/calibrate',
             10
         )
 
@@ -634,7 +637,7 @@ class Controller(Node):
 
             # Activate Hand Motion Control with MPU
             if key.char == "3":
-                if self.ps4controller == False:
+                if self.ps4controller == False and self.smartphone_inclinometer == False:
                     self.handmotion = True
                     self.set_control_mode("MPU", self.emotionactive)
             # Deactivate Hand Motion Control with MPU
@@ -644,7 +647,7 @@ class Controller(Node):
 
             # Activate PS4 Controller
             if key.char == "5":
-                if self.handmotion == False:
+                if self.handmotion == False and self.smartphone_inclinometer == False:
                    self.ps4controller = True
                    self.set_control_mode("PS4", self.emotionactive)
             # Deactivate PS4 Controller
@@ -652,14 +655,24 @@ class Controller(Node):
                 self.ps4controller = False
                 self.set_control_mode("Default", self.emotionactive)
 
+            # Activate Smartphone Inclinometer
+            if key.char == "7":
+                if self.handmotion == False and self.ps4controller == False:
+                   self.smartphone_inclinometer = True
+                   self.set_control_mode("PHONE-IMU", self.emotionactive)
+            # Deactivate Smartphone Inclinometer
+            if key.char == "8":
+                self.smartphone_inclinometer = False
+                self.set_control_mode("Default", self.emotionactive)
+
 
             # Calibrate Inclinometer
-            if key.char == "7":
+            if key.char == "c":
                 self._land_pub.publish(Empty())
                 self.emotionactive = False
                 self.set_control_mode("Default", self.emotionactive)
                 self.get_logger().info("Calibrating Inclinometer...")
-                self.esp32_calibrate_pub.publish(Empty())                
+                self.calibrate_pub.publish(Empty())                
 
             if key.char == "w":
                 self.key_pressed["forward"] = self.speed
