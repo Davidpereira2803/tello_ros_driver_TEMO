@@ -102,7 +102,6 @@ After launching everything there is a interface on which one can see the video f
 | `Shift + ↓`   | flip backward      | drone flips backward                    |
 | `Shift + ←`   | flip left          | drone flips left                        |
 | `Shift + →`   | flip right         | drone flips right                       |
-| `1`           | happy movement     | drone performs happy movement           |
 | `1`  | happy movement              | drone performs happy movement           |
 | `2`  | sad movement                | drone performs sad movement             |
 | `3`  | angry movement              | drone performs angry movement           |
@@ -118,6 +117,26 @@ After launching everything there is a interface on which one can see the video f
 - Arrow keys (`↑`, `↓`, `←`, `→`) control altitude and yaw rotation.  
 - **Shift + Arrow Keys** trigger flips in the corresponding direction.  
 - Speed adjustments (`z`, `x`) modify the drone's speed gradually.
+
+---
+
+### PS4 Controller Mappings
+
+Currently, no direct implementation for PS4 controller support was found in the codebase. However, you can use external tools like `ros2 joy` or `ds4drv` to map PS4 controller buttons and joysticks to drone actions. Below is a suggested mapping:
+
+| Button/Joystick | Action                      |
+|-----------------|-----------------------------|
+| Left Joystick   | Move forward/backward, left/right |
+| Right Joystick  | Adjust altitude and yaw rotation |
+| X Button        | Take off                    |
+| Circle Button   | Land                        |
+| Triangle Button | Activate emotion reaction   |
+| Square Button   | Deactivate emotion reaction |
+| L1 + Joystick   | Perform flips (directional) |
+| R1              | Increase speed              |
+| L2              | Decrease speed              |
+
+To configure this, refer to ROS2 joystick tutorials or use a joystick-to-keyboard mapping tool.
 
 
 
