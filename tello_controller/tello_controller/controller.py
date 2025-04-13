@@ -1,101 +1,92 @@
 from rclpy.node import Node
 from pynput import keyboard
+
+from tello_msgs.msg import FlipControl
+from std_msgs.msg import Empty, String, Float32MultiArray
 from geometry_msgs.msg import Twist
-from std_msgs.msg import Empty, String
-from tello_msgs.msg import FlipControl, ModeStatus
+from tello_msgs.msg import PS4Buttons, ModeStatus, FacePosition
 
 import sys
 
-class Controller(Node):
-    # - Topics
-    tello_vel_cmd_stamped_topic_name = "/cmd_vel"
-    tello_takeoff_topic_name = "/takeoff"
-    tello_land_topic_name = "/land"
-    tello_flip_control_topic_name = "/flip"
+from .publisher_setup import PublisherSetup
+from .subscriber_setup import SubscriberSetup
+from .input_handler import InputHandler
+from .emotion_handler import EmotionHandler
 
+
+
+class Controller(Node):
     def __init__(self, node_name):
         super().__init__(node_name)
         self.print_controls()
-
-        # Movement dictionary
         self.key_pressed = {
             "th": 0.0,
             "right": 0.0,
             "forward": 0.0,
             "cw": 0.0,
         }
-
-        self.speed = 0.5
-        self.shutdown = False
+        self.speed = 0.5  # from 0 - 1
         self.shift_key_pressed = False
+        self.shutdown = False
 
-        # Mode flags
+        # activate ps4 controller
         self.ps4controller = False
+
+        # activate hand motion control
         self.handmotion = False
+
+        # activate smartphone inclinometer
         self.smartphone_inclinometer = False
+
+        # Current mode
         self.current_mode = "Default"
 
-        # Emotion states
-        self.emotionactive = False
-        self.notperformed = True
-        self.latest_emotion = None
+        # Flip triggered
+        self.fliptriggered = False
 
-        # Emotion reaction flags
-        self.count = 0
+        self.latest_emotion = None
+        self.notperformed = True
+        self.emotionactive = False
+        
+        # Happy
         self.happyperforming = False
         self.happyperf = False
         self.happyclean = False
 
+        # Sad
         self.sadperforming = False
         self.sadperf = False
         self.sadclean = False
 
+        # Angry
         self.angryperforming = False
         self.angryperf = False
         self.angryclean = False
         self.angryperf2 = False
+        self.count = 0
 
+        # Surprised
         self.surprisedperforming = False
         self.surprisedperf = False
         self.surprisedclean = False
         self.surprisedperf2 = False
 
+        # Fear
         self.fearperforming = False
         self.fearperf = False
 
+        # Disgust
         self.disgustperforming = False
         self.disgustperf = False
         self.disgustclean = False
 
-        # Flip state
-        self.fliptriggered = False
 
-        # Keyboard listener
-        self._keyboard_listener = keyboard.Listener(
-            on_press=self.on_press, on_release=self.on_release
-        )
-
-        # Timer for emotion callback (to be moved)
         self.calltime = 1.5
-        self.timer = self.create_timer(self.calltime, self.emotion_reactions)
 
-    def begin(self):
-        self.print_controls()
-        self.init_pub()
-        self.init_timers()
-        self._keyboard_listener.start()
-
-    def init_timers(self):
-        self.cmd_vel_timer = self.create_timer(0.05, self.cmd_vel_callback)
-
-    def init_pub(self):
-        self.cmd_vel_pub = self.create_publisher(Twist, self.tello_vel_cmd_stamped_topic_name, 1)
-        self._takeoff_pub = self.create_publisher(Empty, self.tello_takeoff_topic_name, 1)
-        self._land_pub = self.create_publisher(Empty, self.tello_land_topic_name, 1)
-        self._flip_control_pub = self.create_publisher(FlipControl, self.tello_flip_control_topic_name, 1)
-        self.control_mode_pub = self.create_publisher(String, '/control_mode', 10)
-        self.control_mode_pub_msg = self.create_publisher(ModeStatus, '/control_mode_status', 10)
-        self.calibrate_pub = self.create_publisher(Empty, '/calibrate', 10)
+        self.publishers = PublisherSetup(self)
+        self.subscribers = SubscriberSetup(self)
+        self.input_handler = InputHandler(self)
+        self.emotion_handler = EmotionHandler(self)
 
     def print_controls(self):
         print("---------------------")
@@ -119,6 +110,30 @@ class Controller(Node):
         print("-----------------")
         print("- Flip Controls -")
         print("-----------------")
-        print("shift + arrow keys or u/i/j/k for flips")
-        print("----------------------------------------")
+        print("shift + up arrow: flip forward")
+        print("shift + down arrow: flip backward")
+        print("shift + left arrow: flip left")
+        print("shift + right arrow: flip right")
+        print("shift + u: flip forward left")
+        print("shift + i: flip forward right")
+        print("shift + j: flip backwards left")
+        print("shift + k: flip backwards right")
+        print("--------------------------------------------")
+
         sys.stdout.flush()
+
+    def begin(self):
+        self.print_controls()
+        self.init_timers()
+
+    def init_timers(self):
+        self.cmd_vel_timer = self.create_timer(0.05, self.cmd_vel_callback)
+
+    def cmd_vel_callback(self):
+        msg = Twist()
+        msg.linear.x = self.key_pressed["forward"]
+        msg.linear.y = self.key_pressed["right"]
+        msg.linear.z = self.key_pressed["th"]
+
+        msg.angular.z = self.key_pressed["cw"]
+        self.cmd_vel_pub.publish(msg)

@@ -8,34 +8,32 @@ class EmotionHandler:
 
     def react(self):
         c = self.controller
+        p = c.publishers  # shortcut to access publishers
+
         if c.emotionactive and c.latest_emotion:
             c.get_logger().info(f"Latest Emotion: {c.latest_emotion}")
 
             # Happy
             if c.happyperforming or (c.notperformed and c.latest_emotion == "Happy"):
                 c.get_logger().info("Happy Front FLip!")
-                msg = FlipControl()
-                msg.flip_backward = True
-                c._flip_control_pub.publish(msg)
+                msg = FlipControl(flip_backward=True)
+                p.flip_control_pub.publish(msg)
                 c.notperformed = False
                 c.happyclean = True
                 c.happyperforming = False
                 return
 
             if c.happyclean:
-                msg = FlipControl()
-                c._flip_control_pub.publish(msg)  # All flips are False by default
+                p.flip_control_pub.publish(FlipControl())  # cancel all flips
                 c.get_logger().info("Happy Clean!")
                 c.happyclean = False
                 c.happyperf = True
                 return
 
             if c.happyperf:
-                msg = FlipControl()
-                msg.flip_forward = True
-                c._flip_control_pub.publish(msg)
-                c.get_logger().info("Happy Back Flip!")
+                p.flip_control_pub.publish(FlipControl(flip_forward=True))
                 c.happyperf = False
+                c.get_logger().info("Happy Back Flip!")
 
             # Angry
             if c.angryperforming or (c.notperformed and c.latest_emotion == "Angry"):
@@ -136,7 +134,7 @@ class EmotionHandler:
 
             # Fear
             if c.fearperforming or (c.notperformed and c.latest_emotion == "Fear"):
-                c._land_pub.publish(Empty())
+                p.land_pub.publish(Empty())
                 c.get_logger().info("Fear Movement 1!")
                 c.notperformed = False
                 c.fearperforming = False

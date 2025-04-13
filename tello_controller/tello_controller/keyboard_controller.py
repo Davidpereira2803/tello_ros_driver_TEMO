@@ -323,11 +323,6 @@ class Controller(Node):
                 self.fliptriggered = False
 
                 return
- 
-
-    def calibration_callback(self):
-        """Callback for calibration updates."""
-
 
 
     def inclinometer_callback(self, msg):
