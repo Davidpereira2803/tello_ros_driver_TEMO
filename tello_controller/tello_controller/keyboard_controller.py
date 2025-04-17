@@ -337,9 +337,9 @@ class Controller(Node):
         takeoff = msg.data[4]
         land = msg.data[5]
 
-        if yaw < 350 and yaw > 300:
+        if yaw < -10:
             clockwise = -1.0
-        elif yaw > 10 and yaw < 60:
+        elif yaw > 10:
             clockwise = 1.0
         else:
             clockwise = 0.0

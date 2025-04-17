@@ -46,7 +46,7 @@ class SmartphonePublisher(Node):
             self.takeoff_start_time = None
             self.land_start_time = None
             self.receive_data_active = True
-            self.calibration_values = {'roll': 0.0, 'pitch': 0.0}
+            self.calibration_values = {'roll': 0.0, 'pitch': 0.0, "yaw": 0.0}
 
             self.receive_thread = threading.Thread(target=self.receive_data, daemon=True)
             self.receive_thread.start()
@@ -72,7 +72,7 @@ class SmartphonePublisher(Node):
 
                 roll = (orient[2] - self.calibration_values['roll']) * 0.01
                 pitch = (orient[1] - self.calibration_values['pitch']) * 0.01
-                yaw = orient[0]
+                yaw = self.angle_difference(orient[0], self.calibration_values['yaw'])
 
                 self.take_off(pitch)
                 self.land(pitch)
@@ -144,7 +144,7 @@ class SmartphonePublisher(Node):
                 grav = values[3:6]
                 lin = values[6:9]
                 orient = values[9:12]
-                return {'roll': orient[2], 'pitch': orient[1]}
+                return {'roll': orient[2], 'pitch': orient[1], 'yaw': orient[0]}
             except:
                 continue
 
@@ -163,4 +163,16 @@ class SmartphonePublisher(Node):
         self.calibration_values['roll'] = data['roll']
         self.get_logger().info(f"Roll calibrated to {data['roll']:.2f}")
 
+        self.get_logger().info("Place the inclinometer in neutral YAW position.")
+        time.sleep(5)
+        data = self._wait_for_data()
+        self.calibration_values['yaw'] = data['yaw']
+        self.get_logger().info(f"Yaw calibrated to {data['yaw']:.2f}")
+
         self.get_logger().info("Calibration complete.")
+
+
+    def angle_difference(self, current, reference):
+        """Compute shortest angular difference (in degrees) between two angles (0-360)."""
+        diff = (current - reference + 180) % 360 - 180
+        return diff
