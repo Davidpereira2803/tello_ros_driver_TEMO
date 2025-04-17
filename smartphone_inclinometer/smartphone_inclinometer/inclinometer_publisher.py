@@ -13,8 +13,8 @@ TAKEOFF_THRESHOLD = 0.9
 LAND_THRESHOLD = -0.9
 TAKEOFFLAND_HOLD_TIME = 1
 
-UP_THRESHOLD = 1.7
-DOWN_THRESHOLD = -1.7
+UP_THRESHOLD = 1.5
+DOWN_THRESHOLD = -1.5
 COOLDOWN_TIME = 1 
 
 class SmartphonePublisher(Node):
@@ -70,8 +70,8 @@ class SmartphonePublisher(Node):
                 lin = values[6:9]
                 orient = values[9:12]
 
-                roll = (orient[2] - self.calibration_values['roll']) * 0.1
-                pitch = (orient[1] - self.calibration_values['pitch']) * 0.1
+                roll = (orient[2] - self.calibration_values['roll']) * 0.01
+                pitch = (orient[1] - self.calibration_values['pitch']) * 0.01
                 yaw = orient[0]
 
                 self.take_off(pitch)
@@ -79,7 +79,7 @@ class SmartphonePublisher(Node):
                 up_down = self.process_linear_acc(lin[1], time.time())
 
                 msg = Float32MultiArray()
-                msg.data = [roll, pitch, yaw, up_down]
+                msg.data = [roll, pitch, yaw, up_down, self.takeoff_triggered, self.land_triggered]
                 self.inclinometer_pub.publish(msg)
 
             except Exception as e:

@@ -49,6 +49,9 @@ class Controller(Node):
         # PS4 Buttons subscriber
         self.ps4_btn_sub = self.create_subscription(PS4Buttons, '/ps4_btn', self.ps4_btn_callback, 10)
 
+        # Smartphone Inclinometer subscriber
+        self.smartphone_inclinometer_sub = self.create_subscription(Float32MultiArray, '/smartphone/inclinometer', self.smartphone_inclinometer_callback, 10)
+
         # activate ps4 controller
         self.ps4controller = False
 
@@ -324,6 +327,37 @@ class Controller(Node):
 
                 return
 
+
+    def smartphone_inclinometer_callback(self, msg):
+        """Process smartphone inclinometer data and map it to drone movement."""
+        roll = msg.data[0]
+        pitch = msg.data[1]
+        yaw = msg.data[2]
+        up_down = msg.data[3]
+        takeoff = msg.data[4]
+        land = msg.data[5]
+
+        if yaw < 350 and yaw > 300:
+            clockwise = -1.0
+        elif yaw > 10 and yaw < 60:
+            clockwise = 1.0
+        else:
+            clockwise = 0.0
+
+        if self.smartphone_inclinometer:
+            self.get_logger().info(f"Received roll: {roll}, pitch: {pitch}, yaw: {yaw}, updown: {up_down}")
+            self.key_pressed["right"] = roll
+            self.key_pressed["forward"] = pitch
+            self.key_pressed["cw"] = clockwise
+            self.key_pressed["th"] = up_down
+
+            if takeoff:
+                self.get_logger().info(f"Drone is about to take off!")
+                #self._takeoff_pub.publish(Empty())
+            
+            if land:
+                self.get_logger().info(f"Drone is about to land!")
+                #self._land_pub.publish(Empty())
 
     def inclinometer_callback(self, msg):
         """Process inclinometer data and map it to drone movement."""
