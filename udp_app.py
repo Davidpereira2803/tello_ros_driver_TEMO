@@ -10,12 +10,10 @@ sock.bind((UDP_IP, UDP_PORT))
 
 print(f"Listening for packets: {UDP_PORT}")
 
-# Open CSV file for appending
 with open('data_phone.csv', mode='a+', newline='') as file:
     file.seek(0)
     writer = csv.writer(file)
     
-    # Write header if file is empty
     if not file.read(1):
         writer.writerow(['timestamp', 'ax', 'ay', 'az', 'gx', 'gy', 'gz', 'mx', 'my', 'mz'])
 

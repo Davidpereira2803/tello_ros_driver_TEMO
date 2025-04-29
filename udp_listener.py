@@ -10,11 +10,9 @@ sock.bind((UDP_IP, UDP_PORT))
 
 print(f"Listening for packets on port {UDP_PORT}")
 
-# Open the CSV file in append mode
 with open('data_esp.csv', mode='a+', newline='') as file:
     writer = csv.writer(file)
     
-    # Write header only if the file is empty
     file.seek(0)
     if not file.read(1):
         writer.writerow(['timestamp', 'ax', 'ay', 'az', 'gx', 'gy', 'gz'])
@@ -24,7 +22,6 @@ with open('data_esp.csv', mode='a+', newline='') as file:
         decoded_data = data.decode()
         print("Received:", decoded_data)
         
-        # Parse the received string
         try:
             fields = decoded_data.strip().split(',')
             values = {}
@@ -32,7 +29,6 @@ with open('data_esp.csv', mode='a+', newline='') as file:
                 key, value = field.split(':')
                 values[key.lower()] = float(value)
             
-            # Prepare row for CSV
             timestamp = int(time.time())
             row = [
                 timestamp,
@@ -44,7 +40,7 @@ with open('data_esp.csv', mode='a+', newline='') as file:
                 values.get('gz', 0.0),
             ]
             writer.writerow(row)
-            file.flush()  # Important to immediately write to disk
+            file.flush()
 
         except Exception as e:
             print(f"Failed to parse data: {decoded_data} - Error: {e}")
