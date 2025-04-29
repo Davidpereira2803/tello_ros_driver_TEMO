@@ -1,5 +1,6 @@
 from rclpy.node import Node
 from pynput import keyboard
+from rclpy.duration import Duration
 
 # ROS messages
 from tello_msgs.msg import FlipControl
@@ -107,6 +108,8 @@ class Controller(Node):
         self.calltime = 1.5
         self.timer = self.create_timer(self.calltime, self.emotion_reactions)  
 
+        self.last_up_time = self.get_clock().now()
+
 
     def print_controls(self):
         print("---------------------")
@@ -194,7 +197,8 @@ class Controller(Node):
         mode_map = {
             "Default": ModeStatus.DEFAULT,
             "MPU": ModeStatus.MPU,
-            "PS4": ModeStatus.PS4
+            "PS4": ModeStatus.PS4,
+            "PHONEIMU": ModeStatus.PHONEIMU
         }
 
         msg_status.mode = mode_map.get(mode, ModeStatus.DEFAULT)
@@ -327,7 +331,6 @@ class Controller(Node):
 
                 return
 
-
     def smartphone_inclinometer_callback(self, msg):
         """Process smartphone inclinometer data and map it to drone movement."""
         roll = msg.data[0]
@@ -353,11 +356,11 @@ class Controller(Node):
 
             if takeoff:
                 self.get_logger().info(f"Drone is about to take off!")
-                #self._takeoff_pub.publish(Empty())
+                self._takeoff_pub.publish(Empty())
             
             if land:
                 self.get_logger().info(f"Drone is about to land!")
-                #self._land_pub.publish(Empty())
+                self._land_pub.publish(Empty())
 
     def inclinometer_callback(self, msg):
         """Process inclinometer data and map it to drone movement."""
@@ -370,6 +373,8 @@ class Controller(Node):
 
         left_right = roll
         forward_backward = pitch
+
+        now = self.get_clock().now()
         
         if yaw < -5 and (abs(left_right) < 0.2 and abs(forward_backward) < 0.2 and up_down < 1.1 and up_down > 0.9):
             clockwise = -1.0
@@ -378,12 +383,13 @@ class Controller(Node):
         else:
             clockwise = 0.0
         
-        if up_down > 1.1 and (abs(left_right) < 0.2 and abs(forward_backward) < 0.2):
+        z_movement = 0.0
+        if up_down > 1.5 and (abs(left_right) < 0.2 and abs(forward_backward) < 0.2):
             z_movement = 1.0
-        elif up_down < 0.9 and (abs(left_right) < 0.2 and abs(forward_backward) < 0.2):
-            z_movement = -1.0
-        else:
-            z_movement = 0.0
+            self.last_up_time = now
+        elif up_down < 0.5 and (abs(left_right) < 0.2 and abs(forward_backward) < 0.2):
+            if (now - self.last_up_time) > Duration(seconds=1.0):
+                z_movement = -1.0
 
         if abs(left_right) < 0.2:
             left_right = 0.0
@@ -391,19 +397,21 @@ class Controller(Node):
             forward_backward = 0.0
 
         if self.handmotion:
-            self.get_logger().info(f"Received roll: {roll}, pitch: {pitch}, yaw: {clockwise}, updown: {z_movement}")
+            #self.get_logger().info(f"Received roll: {roll}, pitch: {pitch}, yaw: {clockwise}, updown: {z_movement}")
             self.key_pressed["right"] = -left_right
             self.key_pressed["forward"] = -forward_backward
             self.key_pressed["cw"] = clockwise
             self.key_pressed["th"] = z_movement
 
             if takeoff:
-                self.get_logger().info(f"Drone is about to take off!")
-                self._takeoff_pub.publish(Empty())
+                #self.get_logger().info(f"Drone is about to take off!")
+                #self._takeoff_pub.publish(Empty())
+                pass
             
             if land:
-                self.get_logger().info(f"Drone is about to land!")
-                self._land_pub.publish(Empty())
+                #self.get_logger().info(f"Drone is about to land!")
+                #self._land_pub.publish(Empty())
+                pass
     
     def emotion_reactions(self):
         """Function to perfrom the emotion related reactions"""
@@ -674,7 +682,6 @@ class Controller(Node):
                 self.handmotion = False
                 self.set_control_mode("Default", self.emotionactive)
 
-            # Activate PS4 Controller
             if key.char == "5":
                 if self.handmotion == False and self.smartphone_inclinometer == False:
                    self.ps4controller = True
@@ -688,7 +695,7 @@ class Controller(Node):
             if key.char == "7":
                 if self.handmotion == False and self.ps4controller == False:
                    self.smartphone_inclinometer = True
-                   self.set_control_mode("PHONE-IMU", self.emotionactive)
+                   self.set_control_mode("PHONEIMU", self.emotionactive)
             # Deactivate Smartphone Inclinometer
             if key.char == "8":
                 self.smartphone_inclinometer = False
@@ -697,11 +704,12 @@ class Controller(Node):
 
             # Calibrate Inclinometer
             if key.char == "c":
-                self._land_pub.publish(Empty())
-                self.emotionactive = False
-                self.set_control_mode("Default", self.emotionactive)
-                self.get_logger().info("Calibrating Inclinometer...")
-                self.calibrate_pub.publish(Empty())                
+                if self.handmotion or self.smartphone_inclinometer:
+                    self._land_pub.publish(Empty())
+                    self.emotionactive = False
+                    self.set_control_mode("Default", self.emotionactive)
+                    self.get_logger().info("Calibrating Inclinometer...")
+                    self.calibrate_pub.publish(Empty())                
 
             if key.char == "w":
                 self.key_pressed["forward"] = self.speed
