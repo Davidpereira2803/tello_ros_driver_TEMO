@@ -376,9 +376,9 @@ class Controller(Node):
 
         now = self.get_clock().now()
         
-        if yaw < -5 and (abs(left_right) < 0.2 and abs(forward_backward) < 0.2 and up_down < 1.1 and up_down > 0.9):
+        if yaw < -10 and (abs(left_right) < 0.2 and abs(forward_backward) < 0.2 and up_down < 1.1 and up_down > 0.9):
             clockwise = -1.0
-        elif yaw > 5 and (abs(left_right) < 0.2 and abs(forward_backward) < 0.2 and up_down < 1.1 and up_down > 0.9):
+        elif yaw > 10 and (abs(left_right) < 0.2 and abs(forward_backward) < 0.2 and up_down < 1.1 and up_down > 0.9):
             clockwise = 1.0
         else:
             clockwise = 0.0
@@ -405,13 +405,11 @@ class Controller(Node):
 
             if takeoff:
                 #self.get_logger().info(f"Drone is about to take off!")
-                #self._takeoff_pub.publish(Empty())
-                pass
+                self._takeoff_pub.publish(Empty())
             
             if land:
                 #self.get_logger().info(f"Drone is about to land!")
-                #self._land_pub.publish(Empty())
-                pass
+                self._land_pub.publish(Empty())
     
     def emotion_reactions(self):
         """Function to perfrom the emotion related reactions"""
