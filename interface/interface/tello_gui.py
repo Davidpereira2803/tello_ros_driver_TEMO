@@ -44,7 +44,7 @@ class TelloGUI(Node, QWidget):
         self.emotion_enabled_label = QLabel("Emotion Detection: Disabled")
         self.emotion_enabled_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        self.game_mode_label = QLabel("Game Mode: Off")
+        self.game_mode_label = QLabel("Game Mode: GameOff")
         self.game_mode_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.battery_label = QLabel("Battery: %")
@@ -71,6 +71,7 @@ class TelloGUI(Node, QWidget):
         right_layout.addStretch(1)  
         right_layout.addWidget(self.current_mode_label)
         right_layout.addWidget(self.emotion_enabled_label)
+        right_layout.addWidget(self.game_mode_label)
         right_layout.addWidget(self.battery_label)
         right_layout.addWidget(self.mpu_label)
         right_layout.addWidget(self.flying_status_label)
@@ -86,10 +87,7 @@ class TelloGUI(Node, QWidget):
 
         self.battery_sub =self.create_subscription(BatteryState, '/battery_state', self.update_battery, 10)
 
-        if self.game_mode == "GAMEOFF":
-            self.video_sub = self.create_subscription(Image, '/camera/image_raw', self.update_video_feed, 10)
-        elif self.game_mode == "GAMEON":
-            self.game_video_sub = self.create_subscription(Image, '/camera/game_image', self.update_video_feed, 10)
+        self.video_sub = self.create_subscription(Image, '/camera/image_raw', self.update_video_feed, 10)
 
         self.inclinometer_sub = self.create_subscription(Float32MultiArray, '/esp32/inclinometer', self.update_mpu, 10)
         self.emotion_sub = self.create_subscription(String, '/detected_emotion', self.update_emotions, 10)
@@ -104,7 +102,8 @@ class TelloGUI(Node, QWidget):
         mode_map = {
             0: "Default",
             1: "MPU",
-            2: "PS4"
+            2: "PS4",
+            3: "PHONEIMU"
         }
         emotion_map = {
             0: "Disabled",
@@ -117,7 +116,17 @@ class TelloGUI(Node, QWidget):
 
         mode_str = mode_map.get(msg.mode, "Unknown")
         emotion_enabled = emotion_map.get(msg.emotion_enabled, "Unknown") 
-        self.game_mode = game_mode_map.get(msg.game_mode, "Unknown") 
+        new_game_mode = game_mode_map.get(msg.game_mode, "Unknown")
+
+        if new_game_mode != self.game_mode:
+            self.game_mode = new_game_mode
+            self.destroy_subscription(self.video_sub)
+
+            if self.game_mode == "GAMEOFF":
+                self.video_sub = self.create_subscription(Image, '/camera/image_raw', self.update_video_feed, 10)
+            elif self.game_mode == "GAMEON":
+                self.video_sub = self.create_subscription(Image, '/camera/game_image', self.update_video_feed, 10)
+
         self.game_mode_label.setText(f"Game Mode: {self.game_mode}")      
         self.current_mode_label.setText(f"Current Mode: {mode_str}")
         self.emotion_enabled_label.setText(f"Emotion Detection: {emotion_enabled}")
@@ -170,6 +179,7 @@ class TelloGUI(Node, QWidget):
 
         pixmap = QPixmap.fromImage(q_img)
         self.video_label.setPixmap(pixmap)
+
 
     def update_emotions(self, msg):
         """ Update detected emotions"""

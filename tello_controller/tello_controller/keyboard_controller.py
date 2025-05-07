@@ -718,6 +718,14 @@ class Controller(Node):
                 self.smartphone_inclinometer = False
                 self.set_control_mode("Default", self.emotionactive, self.game_mode)
 
+            # Activate Game Mode
+            if key.char == "9":
+                self.game_mode = "GAMEON"
+                self.set_control_mode(self.current_mode, self.emotionactive, self.game_mode)
+            # Deactivate Game Mode
+            if key.char == "0":
+                self.game_mode = "GAMEOFF"
+                self.set_control_mode(self.current_mode, self.emotionactive, self.game_mode)
 
             # Calibrate Inclinometer
             if key.char == "c":
