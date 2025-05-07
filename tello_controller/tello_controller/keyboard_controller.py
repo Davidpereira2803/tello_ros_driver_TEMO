@@ -62,6 +62,7 @@ class Controller(Node):
 
         # Current mode
         self.current_mode = "Default"
+        self.game_mode = "GAMEOFF"
 
         # Flip triggered
         self.fliptriggered = False
@@ -192,7 +193,7 @@ class Controller(Node):
             10
         )
 
-    def set_control_mode(self, mode: str, emotion_enabled: bool):
+    def set_control_mode(self, mode: str, emotion_enabled: bool, game_mode: bool):
         if self.current_mode != mode:
             self.current_mode = mode
             msg_str = String()
@@ -209,6 +210,8 @@ class Controller(Node):
 
         msg_status.mode = mode_map.get(mode, ModeStatus.DEFAULT)
         msg_status.emotion_enabled = ModeStatus.ENABLED if emotion_enabled else ModeStatus.DISABLED
+        msg_status.game_mode = ModeStatus.GAMEON if game_mode == "GAMEON" else ModeStatus.GAMEOFF
+
         self.control_mode_pub_msg.publish(msg_status)
 
 
@@ -280,7 +283,7 @@ class Controller(Node):
 
             if msg.buttons[9] == 1:
                 self.ps4controller = False
-                self.set_control_mode("Default")
+                self.set_control_mode("Default", self.emotionactive, self.game_mode)
 
             if msg.buttons[13] == 1 and self.fliptriggered == False:
                 msg = FlipControl()
@@ -679,41 +682,41 @@ class Controller(Node):
             if key.char == "1":
                 self.emotionactive = True
                 self.notperformed = True
-                self.set_control_mode(self.current_mode, self.emotionactive)
+                self.set_control_mode(self.current_mode, self.emotionactive, self.game_mode)
             # Deactivate Emotion Reaction
             if key.char == "2":
                 self.emotionactive = False
                 self.notperformed = False
-                self.set_control_mode(self.current_mode, self.emotionactive)
+                self.set_control_mode(self.current_mode, self.emotionactive, self.game_mode)
 
             # Activate Hand Motion Control with MPU
             if key.char == "3":
                 if self.ps4controller == False and self.smartphone_inclinometer == False:
                     self.handmotion = True
-                    self.set_control_mode("MPU", self.emotionactive)
+                    self.set_control_mode("MPU", self.emotionactive, self.game_mode)
             # Deactivate Hand Motion Control with MPU
             if key.char == "4":
                 self.handmotion = False
-                self.set_control_mode("Default", self.emotionactive)
+                self.set_control_mode("Default", self.emotionactive, self.game_mode)
 
             if key.char == "5":
                 if self.handmotion == False and self.smartphone_inclinometer == False:
                    self.ps4controller = True
-                   self.set_control_mode("PS4", self.emotionactive)
+                   self.set_control_mode("PS4", self.emotionactive, self.game_mode)
             # Deactivate PS4 Controller
             if key.char == "6":
                 self.ps4controller = False
-                self.set_control_mode("Default", self.emotionactive)
+                self.set_control_mode("Default", self.emotionactive, self.game_mode)
 
             # Activate Smartphone Inclinometer
             if key.char == "7":
                 if self.handmotion == False and self.ps4controller == False:
                    self.smartphone_inclinometer = True
-                   self.set_control_mode("PHONEIMU", self.emotionactive)
+                   self.set_control_mode("PHONEIMU", self.emotionactive, self.game_mode)
             # Deactivate Smartphone Inclinometer
             if key.char == "8":
                 self.smartphone_inclinometer = False
-                self.set_control_mode("Default", self.emotionactive)
+                self.set_control_mode("Default", self.emotionactive, self.game_mode)
 
 
             # Calibrate Inclinometer
@@ -721,7 +724,7 @@ class Controller(Node):
                 if self.handmotion or self.smartphone_inclinometer:
                     self._land_pub.publish(Empty())
                     self.emotionactive = False
-                    self.set_control_mode("Default", self.emotionactive)
+                    self.set_control_mode("Default", self.emotionactive, self.game_mode)
                     self.get_logger().info("Calibrating Inclinometer...")
                     self.calibrate_pub.publish(Empty())                
 
