@@ -60,11 +60,11 @@ with open('data_esp.csv', mode='a+', newline='') as file:
 
                 if current_time - last_detection_time > COOLDOWN_TIME:
                     if deviation > UP_THRESHOLD:
-                        print("🟢 Detected UPWARD movement!")
+                        print("Detected UPWARD movement!")
                         last_detection_time = current_time
                         last_direction = "up"
                     elif deviation < DOWN_THRESHOLD:
-                        print("🔵 Detected DOWNWARD movement!")
+                        print("Detected DOWNWARD movement!")
                         last_detection_time = current_time
                         last_direction = "down"
 

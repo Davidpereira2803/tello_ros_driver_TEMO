@@ -112,6 +112,11 @@ class Controller(Node):
         self.last_updown_time = self.get_clock().now()
         self.updown_cooldown = Duration(seconds=1.0)
 
+        self.z_movement_duration = Duration(seconds=0.5)
+        self.z_movement_end_time = self.get_clock().now()
+        self.z_movement_active = 0.0
+
+
 
     def print_controls(self):
         print("---------------------")
@@ -413,7 +418,7 @@ class Controller(Node):
                 #self.get_logger().info(f"Drone is about to land!")
                 self._land_pub.publish(Empty())
 
-    def inclinometer_callback(self, msg):
+    def inclinometer_callback2(self, msg):
         """Process inclinometer data and map it to drone movement."""
         roll = msg.data[0]
         pitch = msg.data[1]
@@ -438,12 +443,68 @@ class Controller(Node):
         if (now - self.last_updown_time) > self.updown_cooldown:
             if deviation > 0.3 and abs(left_right) < 0.2 and abs(forward_backward) < 0.2:
                 z_movement = 1.0
-                #self.get_logger().info(f"Up movement detected")
+                self.get_logger().info(f"Up movement detected")
                 self.last_updown_time = now
             elif deviation < -0.3 and abs(left_right) < 0.2 and abs(forward_backward) < 0.2:
                 z_movement = -1.0
-                #self.get_logger().info(f"Down movement detected")
+                self.get_logger().info(f"Down movement detected")
                 self.last_updown_time = now
+
+        if abs(left_right) < 0.2:
+            left_right = 0.0
+        if abs(forward_backward) < 0.2 or abs(forward_backward) > 0.85:
+            forward_backward = 0.0
+
+        if self.handmotion:
+            self.key_pressed["right"] = -left_right
+            self.key_pressed["forward"] = -forward_backward
+            self.key_pressed["cw"] = clockwise
+            self.key_pressed["th"] = z_movement
+
+            if takeoff:
+                self._takeoff_pub.publish(Empty())
+
+            if land:
+                self._land_pub.publish(Empty())
+
+    def inclinometer_callback(self, msg):
+        """Process inclinometer data and map it to drone movement."""
+        roll = msg.data[0]
+        pitch = msg.data[1]
+        takeoff = msg.data[2]
+        land = msg.data[3]
+        up_down = msg.data[4]
+        yaw = msg.data[5]
+
+        left_right = roll
+        forward_backward = pitch
+        now = self.get_clock().now()
+
+        if yaw < -10 and abs(left_right) < 0.2 and abs(forward_backward) < 0.2 and 0.9 < up_down < 1.1:
+            clockwise = -1.0
+        elif yaw > 10 and abs(left_right) < 0.2 and abs(forward_backward) < 0.2 and 0.9 < up_down < 1.1:
+            clockwise = 1.0
+        else:
+            clockwise = 0.0
+
+        if self.get_clock().now() < self.z_movement_end_time:
+            z_movement = self.z_movement_active
+        else:
+            z_movement = 0.0
+
+        deviation = up_down - 1.0
+        if (now - self.last_updown_time) > self.updown_cooldown:
+            if deviation > 0.3 and abs(left_right) < 0.2 and abs(forward_backward) < 0.2:
+                self.z_movement_active = 1.0
+                self.z_movement_end_time = now + self.z_movement_duration
+                self.last_updown_time = now
+                self.get_logger().info(f"Up movement detected")
+            elif deviation < -0.3 and abs(left_right) < 0.2 and abs(forward_backward) < 0.2:
+                self.z_movement_active = -1.0
+                self.z_movement_end_time = now + self.z_movement_duration
+                self.last_updown_time = now
+                self.get_logger().info(f"Down movement detected")
+
 
         if abs(left_right) < 0.2:
             left_right = 0.0
