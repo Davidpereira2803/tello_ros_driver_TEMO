@@ -369,104 +369,6 @@ class Controller(Node):
                 self.get_logger().info(f"Drone is about to land!")
                 self._land_pub.publish(Empty())
 
-    def inclinometer_callback_or(self, msg):
-        """Process inclinometer data and map it to drone movement."""
-        roll = msg.data[0]
-        pitch = msg.data[1]
-        takeoff = msg.data[2]
-        land = msg.data[3]
-        up_down = msg.data[4]
-        yaw = msg.data[5]
-
-        left_right = roll
-        forward_backward = pitch
-
-        now = self.get_clock().now()
-        
-        if yaw < -10 and (abs(left_right) < 0.2 and abs(forward_backward) < 0.2 and up_down < 1.1 and up_down > 0.9):
-            clockwise = -1.0
-        elif yaw > 10 and (abs(left_right) < 0.2 and abs(forward_backward) < 0.2 and up_down < 1.1 and up_down > 0.9):
-            clockwise = 1.0
-        else:
-            clockwise = 0.0
-        
-        z_movement = 0.0
-        if up_down > 1.3 and (abs(left_right) < 0.2 and abs(forward_backward) < 0.2):
-            z_movement = 1.0
-            self.last_up_time = now
-        elif up_down < 0.8 and (abs(left_right) < 0.2 and abs(forward_backward) < 0.2):
-            if (now - self.last_up_time) > Duration(seconds=1.0):
-                z_movement = -1.0
-
-        if abs(left_right) < 0.2:
-            left_right = 0.0
-        if abs(forward_backward) < 0.2 or abs(forward_backward) > 0.85:
-            forward_backward = 0.0
-
-        if self.handmotion:
-            #self.get_logger().info(f"Received roll: {roll}, pitch: {pitch}, yaw: {clockwise}, updown: {z_movement}")
-            self.key_pressed["right"] = -left_right
-            self.key_pressed["forward"] = -forward_backward
-            self.key_pressed["cw"] = clockwise
-            self.key_pressed["th"] = z_movement
-
-            if takeoff:
-                #self.get_logger().info(f"Drone is about to take off!")
-                self._takeoff_pub.publish(Empty())
-            
-            if land:
-                #self.get_logger().info(f"Drone is about to land!")
-                self._land_pub.publish(Empty())
-
-    def inclinometer_callback2(self, msg):
-        """Process inclinometer data and map it to drone movement."""
-        roll = msg.data[0]
-        pitch = msg.data[1]
-        takeoff = msg.data[2]
-        land = msg.data[3]
-        up_down = msg.data[4]
-        yaw = msg.data[5]
-
-        left_right = roll
-        forward_backward = pitch
-        now = self.get_clock().now()
-
-        if yaw < -10 and abs(left_right) < 0.2 and abs(forward_backward) < 0.2 and 0.9 < up_down < 1.1:
-            clockwise = -1.0
-        elif yaw > 10 and abs(left_right) < 0.2 and abs(forward_backward) < 0.2 and 0.9 < up_down < 1.1:
-            clockwise = 1.0
-        else:
-            clockwise = 0.0
-
-        z_movement = 0.0
-        deviation = up_down - 1.0
-        if (now - self.last_updown_time) > self.updown_cooldown:
-            if deviation > 0.3 and abs(left_right) < 0.2 and abs(forward_backward) < 0.2:
-                z_movement = 1.0
-                self.get_logger().info(f"Up movement detected")
-                self.last_updown_time = now
-            elif deviation < -0.3 and abs(left_right) < 0.2 and abs(forward_backward) < 0.2:
-                z_movement = -1.0
-                self.get_logger().info(f"Down movement detected")
-                self.last_updown_time = now
-
-        if abs(left_right) < 0.2:
-            left_right = 0.0
-        if abs(forward_backward) < 0.2 or abs(forward_backward) > 0.85:
-            forward_backward = 0.0
-
-        if self.handmotion:
-            self.key_pressed["right"] = -left_right
-            self.key_pressed["forward"] = -forward_backward
-            self.key_pressed["cw"] = clockwise
-            self.key_pressed["th"] = z_movement
-
-            if takeoff:
-                self._takeoff_pub.publish(Empty())
-
-            if land:
-                self._land_pub.publish(Empty())
-
     def inclinometer_callback(self, msg):
         """Process inclinometer data and map it to drone movement."""
         roll = msg.data[0]
@@ -512,15 +414,18 @@ class Controller(Node):
             forward_backward = 0.0
 
         if self.handmotion:
+            #self.get_logger().info(f"Received roll: {roll}, pitch: {pitch}, yaw: {clockwise}, updown: {z_movement}")
             self.key_pressed["right"] = -left_right
             self.key_pressed["forward"] = -forward_backward
             self.key_pressed["cw"] = clockwise
             self.key_pressed["th"] = z_movement
 
             if takeoff:
+                #self.get_logger().info(f"Drone is about to take off!")
                 self._takeoff_pub.publish(Empty())
 
             if land:
+                #self.get_logger().info(f"Drone is about to land!")
                 self._land_pub.publish(Empty())
     
     def emotion_reactions(self):
