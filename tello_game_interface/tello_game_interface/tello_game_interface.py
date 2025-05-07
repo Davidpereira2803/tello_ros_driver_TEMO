@@ -8,7 +8,7 @@ from cv_bridge import CvBridge
 import numpy as np
 import time
 import pygame
-from tello_msgs.msg import PS4Buttons
+from tello_msgs.msg import PS4Buttons, Game
 
 from playsound import playsound
 
@@ -19,6 +19,7 @@ class TelloGame(Node):
         self.bridge = CvBridge()
         self.subscription = self.create_subscription(Image, '/camera/image_raw', self.image_callback, 10)
         self.ps4_btn_sub = self.create_subscription(PS4Buttons, '/ps4_btn', self.ps4_button_callback, 10)
+        self.trigger_state_sub = self.create_subscription(Game, '/trigger_state', self.update_trigger_state, 10)
 
         self.alive_targets = set()
         self.score = 0
@@ -96,5 +97,7 @@ class TelloGame(Node):
     def ps4_button_callback(self, msg):
         self.shoot_pressed = msg.buttons[7] == 1 
         self.reload_pressed = msg.buttons[6] == 1
-
-
+    
+    def update_trigger_state(self, msg):
+        self.shoot_pressed = msg.trigger_state == 1
+        self.reload_pressed = msg.trigger_state == 2

@@ -6,7 +6,7 @@ from rclpy.duration import Duration
 from tello_msgs.msg import FlipControl
 from std_msgs.msg import Empty, String, Float32MultiArray
 from geometry_msgs.msg import Twist
-from tello_msgs.msg import PS4Buttons, ModeStatus, FacePosition
+from tello_msgs.msg import PS4Buttons, ModeStatus, FacePosition, Game
 
 import sys
 
@@ -31,6 +31,7 @@ class Controller(Node):
             on_press=self.on_press, on_release=self.on_release
         )
         self.shift_key_pressed = False
+        self.space_key_pressed = False
         self.shutdown = False
 
         # Face position subscriber
@@ -190,6 +191,11 @@ class Controller(Node):
 
         self.calibrate_pub = self.create_publisher(
             Empty, '/calibrate',
+            10
+        )
+
+        self.trigger_state_pub = self.create_publisher(
+            Game, '/trigger_state',
             10
         )
 
@@ -646,96 +652,116 @@ class Controller(Node):
 
     def on_press(self, key):
         print(f"pressing the key {key}")
-        try:
+        #self.get_logger().info(f"pressing the key {key}")
+
+        # Trigger State
+        if key == keyboard.Key.space:
+            self.get_logger().info(f"Trigger State") 
+            msg = Game()
+            msg.state = Game.SHOOT
+            self.trigger_state_pub.publish(msg)
+    
+        if hasattr(key, "char") and key.char:
+            c = key.char
+
             # Perform Happy Movement
-            if key.char == "1" and self.shift_key_pressed:
+            if c == "1" and self.shift_key_pressed:
                 self.happyperforming = True
                 self.emotionactive = True
 
             # Perform Sad Movement
-            if key.char == "2" and self.shift_key_pressed:
+            if c == "2" and self.shift_key_pressed:
                 self.sadperforming = True
                 self.emotionactive = True
 
             # Perform Angry Movement
-            if key.char == "3" and self.shift_key_pressed:
+            if c == "3" and self.shift_key_pressed:
                 self.angryperforming = True
                 self.emotionactive = True
             
             # Perform Surprised Movement
-            if key.char == "4" and self.shift_key_pressed:
+            if c == "4" and self.shift_key_pressed:
                 self.surprisedperforming = True
                 self.emotionactive = True
 
             # Perform Fear Movement
-            if key.char == "5" and self.shift_key_pressed:
+            if c == "5" and self.shift_key_pressed:
                 self.fearperforming = True
                 self.emotionactive = True
 
             # Perform Disgust Movement
-            if key.char == "6" and self.shift_key_pressed:
+            if c == "6" and self.shift_key_pressed:
                 self.disgustperforming = True
                 self.emotionactive = True
 
-
             # Activate Emotion Reaction
-            if key.char == "1":
+            if c == "1":
                 self.emotionactive = True
                 self.notperformed = True
                 self.set_control_mode(self.current_mode, self.emotionactive, self.game_mode)
             # Deactivate Emotion Reaction
-            if key.char == "2":
+            if c == "2":
                 self.emotionactive = False
                 self.notperformed = False
                 self.set_control_mode(self.current_mode, self.emotionactive, self.game_mode)
 
             # Activate Hand Motion Control with MPU
-            if key.char == "3":
+            if c == "3":
                 if self.ps4controller == False and self.smartphone_inclinometer == False:
                     self.handmotion = True
                     self.set_control_mode("MPU", self.emotionactive, self.game_mode)
             # Deactivate Hand Motion Control with MPU
-            if key.char == "4":
+            if c == "4":
                 self.handmotion = False
                 self.set_control_mode("Default", self.emotionactive, self.game_mode)
 
-            if key.char == "5":
+            if c == "5":
                 if self.handmotion == False and self.smartphone_inclinometer == False:
-                   self.ps4controller = True
-                   self.set_control_mode("PS4", self.emotionactive, self.game_mode)
+                    self.ps4controller = True
+                    self.set_control_mode("PS4", self.emotionactive, self.game_mode)
             # Deactivate PS4 Controller
-            if key.char == "6":
+            if c == "6":
                 self.ps4controller = False
                 self.set_control_mode("Default", self.emotionactive, self.game_mode)
 
             # Activate Smartphone Inclinometer
-            if key.char == "7":
+            if c == "7":
                 if self.handmotion == False and self.ps4controller == False:
-                   self.smartphone_inclinometer = True
-                   self.set_control_mode("PHONEIMU", self.emotionactive, self.game_mode)
+                    self.smartphone_inclinometer = True
+                    self.set_control_mode("PHONEIMU", self.emotionactive, self.game_mode)
             # Deactivate Smartphone Inclinometer
-            if key.char == "8":
+            if c == "8":
                 self.smartphone_inclinometer = False
                 self.set_control_mode("Default", self.emotionactive, self.game_mode)
 
             # Activate Game Mode
-            if key.char == "9":
+            if c == "9":
                 self.game_mode = "GAMEON"
                 self.set_control_mode(self.current_mode, self.emotionactive, self.game_mode)
             # Deactivate Game Mode
-            if key.char == "0":
+            if c == "0":
                 self.game_mode = "GAMEOFF"
                 self.set_control_mode(self.current_mode, self.emotionactive, self.game_mode)
 
             # Calibrate Inclinometer
-            if key.char == "c":
+            if c == "c":
                 if self.handmotion or self.smartphone_inclinometer:
                     self._land_pub.publish(Empty())
                     self.emotionactive = False
                     self.set_control_mode("Default", self.emotionactive, self.game_mode)
                     self.get_logger().info("Calibrating Inclinometer...")
-                    self.calibrate_pub.publish(Empty())                
+                    self.calibrate_pub.publish(Empty())    
 
+            # Reload Gun
+            if c == "r":
+                self.get_logger().info("Reloading Gun...")
+                msg = Game()
+                msg.state = Game.RELOAD
+                self.trigger_state_pub.publish(msg)
+                self.get_logger().info(f"Reloading!")
+
+
+        try:
             if key.char == "w":
                 self.key_pressed["forward"] = self.speed
             if key.char == "s":
@@ -760,8 +786,12 @@ class Controller(Node):
             pass
 
         try:
-            if key == key.shift:
+            if key == keyboard.Key.shift:
                 self.shift_key_pressed = True
+
+            if key == keyboard.Key.space:
+                self.space_key_pressed = True
+
             if key == key.up and self.shift_key_pressed:
                 msg = FlipControl()
                 msg.flip_forward = True
@@ -851,6 +881,12 @@ class Controller(Node):
         if key == keyboard.Key.esc:
             self.shutdown = True
             return False
+        
+        if key == keyboard.Key.space:
+            msg = Game()
+            msg.state = Game.NEUTRAL
+            self.trigger_state_pub.publish(msg)
+
         try:
             if key.char == "w":
                 self.key_pressed["forward"] = 0.0
@@ -860,11 +896,19 @@ class Controller(Node):
                 self.key_pressed["right"] = 0.0
             if key.char == "a":
                 self.key_pressed["right"] = 0.0
+
+            if key.char == "r":
+                msg = Game()
+                msg.state = Game.NEUTRAL
+                self.trigger_state_pub.publish(msg)
         except AttributeError:
             pass
 
         try:
-            if key == key.shift:
+            if key == keyboard.Key.shift:
+                self.shift_key_pressed = False
+
+            if key == keyboard.Key.space:
                 self.shift_key_pressed = False
 
             if key == key.up and self.shift_key_pressed:
