@@ -10,7 +10,6 @@ from tello_msgs.msg import PS4Buttons, ModeStatus, FacePosition
 
 import sys
 
-
 class Controller(Node):
     # - Topics
     tello_vel_cmd_stamped_topic_name = "/cmd_vel"

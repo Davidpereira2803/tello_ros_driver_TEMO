@@ -10,6 +10,8 @@ import time
 import pygame
 from tello_msgs.msg import PS4Buttons
 
+from playsound import playsound
+
 class TelloGame(Node):
     def __init__(self):
         super().__init__('tello_game_node')
@@ -54,7 +56,7 @@ class TelloGame(Node):
                 cv2.circle(frame, enemy_center, 20, (0, 204, 255), -1)
 
         if self.shoot_pressed and self.magazine > 0:
-
+            playsound('/home/david/Projects/TEMO_ros_ws/src/tello_ros_driver_TEMO/sound/gun.wav')
             if ids is not None:
                 for corner, marker_id in zip(corners, ids):
                     if marker_id not in self.alive_targets:
@@ -78,6 +80,7 @@ class TelloGame(Node):
             self.get_logger().info(f"Reload!")
 
         if self.reload_pressed and self.magazine < 10:
+            playsound('/home/david/Projects/TEMO_ros_ws/src/tello_ros_driver_TEMO/sound/reload.wav')
             self.magazine = 10
             self.get_logger().info(f"Reloading!")
 
