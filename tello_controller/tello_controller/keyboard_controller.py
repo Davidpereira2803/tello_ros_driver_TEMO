@@ -363,18 +363,18 @@ class Controller(Node):
             clockwise = 0.0
 
         if self.smartphone_inclinometer:
-            self.get_logger().info(f"Received roll: {roll}, pitch: {pitch}, yaw: {yaw}, updown: {up_down}")
+            #self.get_logger().info(f"Received roll: {roll}, pitch: {pitch}, yaw: {yaw}, updown: {up_down}")
             self.key_pressed["right"] = roll
             self.key_pressed["forward"] = pitch
             self.key_pressed["cw"] = clockwise
             self.key_pressed["th"] = up_down
 
             if takeoff:
-                self.get_logger().info(f"Drone is about to take off!")
+                #self.get_logger().info(f"Drone is about to take off!")
                 self._takeoff_pub.publish(Empty())
             
             if land:
-                self.get_logger().info(f"Drone is about to land!")
+                #self.get_logger().info(f"Drone is about to land!")
                 self._land_pub.publish(Empty())
 
     def inclinometer_callback(self, msg):
@@ -408,12 +408,12 @@ class Controller(Node):
                 self.z_movement_active = 1.0
                 self.z_movement_end_time = now + self.z_movement_duration
                 self.last_updown_time = now
-                self.get_logger().info(f"Up movement detected")
+                #self.get_logger().info(f"Up movement detected")
             elif deviation < -0.3 and abs(left_right) < 0.2 and abs(forward_backward) < 0.2:
                 self.z_movement_active = -1.0
                 self.z_movement_end_time = now + self.z_movement_duration
                 self.last_updown_time = now
-                self.get_logger().info(f"Down movement detected")
+                #self.get_logger().info(f"Down movement detected")
 
 
         if abs(left_right) < 0.2:
@@ -440,11 +440,11 @@ class Controller(Node):
         """Function to perfrom the emotion related reactions"""
         if self.emotionactive:
             if self.latest_emotion:
-                self.get_logger().info(f"Latest Emotion: {self.latest_emotion}")
+                #self.get_logger().info(f"Latest Emotion: {self.latest_emotion}")
 
                 # Happy
                 if self.happyperforming or (self.notperformed and (self.latest_emotion == "Happy")):
-                    self.get_logger().info("Happy Front FLip!")
+                    #self.get_logger().info("Happy Front FLip!")
                     msg = FlipControl()
                     msg.flip_forward = False
                     msg.flip_backward = True
@@ -468,7 +468,7 @@ class Controller(Node):
                     msg.flip_back_left = False
                     msg.flip_back_right = False
                     self._flip_control_pub.publish(msg)
-                    self.get_logger().info("Happy Clean!")
+                    #self.get_logger().info("Happy Clean!")
                     self.happyclean = False
                     self.happyperf = True
                     return
@@ -481,15 +481,14 @@ class Controller(Node):
                     msg.flip_right = False
                     self._flip_control_pub.publish(msg)
                     self.happyperf = False
-                    self.get_logger().info("Happy Back Flip!")
+                    #self.get_logger().info("Happy Back Flip!")
 
                 # Angry
                 if  self.angryperforming or (self.notperformed and (self.latest_emotion == "Angry")):
 
                     self.key_pressed["th"] = -self.speed
-                    
 
-                    self.get_logger().info("Angry Movement 1!")
+                    #self.get_logger().info("Angry Movement 1!")
                     self.notperformed = False
                     self.angryclean = True
                     self.angryperforming = False
@@ -500,7 +499,7 @@ class Controller(Node):
                     
                     self.key_pressed["th"] = 0.0
 
-                    self.get_logger().info("Angry Clean!")
+                    #self.get_logger().info("Angry Clean!")
                     self.angryclean = False
                     self.angryperf = True
                     return
@@ -510,7 +509,7 @@ class Controller(Node):
                     self.key_pressed["cw"] = self.speed
 
                     self.angryperf2 = True
-                    self.get_logger().info("Angry Movement 2!")
+                    #self.get_logger().info("Angry Movement 2!")
                     return
                 elif self.angryperf:
                     self.key_pressed["cw"] = 0.0
@@ -522,7 +521,7 @@ class Controller(Node):
                     self.key_pressed["forward"] = self.speed
 
                     self.angryperf2 = False
-                    self.get_logger().info("Angry Movement 3!")
+                    #self.get_logger().info("Angry Movement 3!")
                     return 
 
                 self.key_pressed["forward"] = 0.0
@@ -533,7 +532,7 @@ class Controller(Node):
                     self.key_pressed["forward"] = -self.speed
                     
 
-                    self.get_logger().info("Sad Movement 1!")
+                    #self.get_logger().info("Sad Movement 1!")
                     self.notperformed = False
                     self.sadclean = True
                     self.sadperforming = False
@@ -544,7 +543,7 @@ class Controller(Node):
                     
                     self.key_pressed["forward"] = 0.0
 
-                    self.get_logger().info("Sad Clean!")
+                    #self.get_logger().info("Sad Clean!")
                     self.sadclean = False
                     self.sadperf = True
                     return
@@ -553,7 +552,7 @@ class Controller(Node):
                     self.count += 1
                     self.key_pressed["cw"] = self.speed
 
-                    self.get_logger().info("Sad Movement 2!")
+                    #self.get_logger().info("Sad Movement 2!")
                     return
                 elif self.sadperf:
                     self.key_pressed["cw"] = 0.0
@@ -565,7 +564,7 @@ class Controller(Node):
 
                     self.key_pressed["th"] = self.speed
 
-                    self.get_logger().info("Surprised Movement 1!")
+                    #self.get_logger().info("Surprised Movement 1!")
                     self.notperformed = False
                     self.surprisedclean = True
                     self.surprisedperforming = False
@@ -576,7 +575,7 @@ class Controller(Node):
                     
                     self.key_pressed["th"] = 0.0
 
-                    self.get_logger().info("Surprised Clean!")
+                    #self.get_logger().info("Surprised Clean!")
                     self.surprisedclean = False
                     if not self.surprisedperf2:
                         self.surprisedperf = True
@@ -588,7 +587,7 @@ class Controller(Node):
                     self.count += 1
                     self.key_pressed["cw"] = self.speed * 2
 
-                    self.get_logger().info("Surprised Movement 2!")
+                    #self.get_logger().info("Surprised Movement 2!")
 
                     return
                 elif self.surprisedperf:
@@ -603,7 +602,7 @@ class Controller(Node):
 
                     self.key_pressed["th"] = -self.speed
 
-                    self.get_logger().info("Surprised Movement 3!")
+                    #self.get_logger().info("Surprised Movement 3!")
                     self.surprisedclean = True
 
                     return
@@ -613,7 +612,7 @@ class Controller(Node):
                     
                     self._land_pub.publish(Empty())
 
-                    self.get_logger().info("Fear Movement 1!")
+                    #self.get_logger().info("Fear Movement 1!")
                     self.notperformed = False
                     self.fearperforming = False
 
@@ -628,7 +627,7 @@ class Controller(Node):
                     self.key_pressed["th"] = self.speed * 2
 
 
-                    self.get_logger().info("Disgust Movement 1!")
+                    #self.get_logger().info("Disgust Movement 1!")
                     self.notperformed = False
                     self.disgustclean = True
                     self.disgustperforming = False
@@ -642,13 +641,14 @@ class Controller(Node):
                     
                     self.key_pressed["th"] = 0.0
 
-                    self.get_logger().info("Disgust Clean!")
+                    #self.get_logger().info("Disgust Clean!")
                     self.disgustclean = False
 
                     return
 
             else:
-                self.get_logger().info("No emotion yet.")
+                #self.get_logger().info("No emotion yet.")
+                pass
 
     def on_press(self, key):
         print(f"pressing the key {key}")
@@ -656,7 +656,7 @@ class Controller(Node):
 
         # Trigger State
         if key == keyboard.Key.space:
-            self.get_logger().info(f"Trigger State") 
+            #self.get_logger().info(f"Trigger State") 
             msg = Game()
             msg.state = Game.SHOOT
             self.trigger_state_pub.publish(msg)
@@ -749,16 +749,16 @@ class Controller(Node):
                     self._land_pub.publish(Empty())
                     self.emotionactive = False
                     self.set_control_mode("Default", self.emotionactive, self.game_mode)
-                    self.get_logger().info("Calibrating Inclinometer...")
+                    #self.get_logger().info("Calibrating Inclinometer...")
                     self.calibrate_pub.publish(Empty())    
 
             # Reload Gun
             if c == "r":
-                self.get_logger().info("Reloading Gun...")
+                #self.get_logger().info("Reloading Gun...")
                 msg = Game()
                 msg.state = Game.RELOAD
                 self.trigger_state_pub.publish(msg)
-                self.get_logger().info(f"Reloading!")
+                #self.get_logger().info(f"Reloading!")
 
 
         try:
@@ -1013,9 +1013,9 @@ class Controller(Node):
 
     def cmd_vel_callback(self):
         msg = Twist()
-        msg.linear.x = self.key_pressed["forward"]
-        msg.linear.y = self.key_pressed["right"]
-        msg.linear.z = self.key_pressed["th"]
+        msg.linear.x = float(self.key_pressed["forward"])
+        msg.linear.y = float(self.key_pressed["right"])
+        msg.linear.z = float(self.key_pressed["th"])
 
-        msg.angular.z = self.key_pressed["cw"]
+        msg.angular.z = float(self.key_pressed["cw"])
         self.cmd_vel_pub.publish(msg)

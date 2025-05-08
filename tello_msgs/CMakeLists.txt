@@ -27,6 +27,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/ModeStatus.msg"
   "msg/FacePosition.msg"
   "msg/Game.msg"
+  "msg/GameStatus.msg"
 )
 
 ament_package()

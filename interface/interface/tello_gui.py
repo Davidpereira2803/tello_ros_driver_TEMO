@@ -5,7 +5,8 @@ from PyQt6.QtGui import QPixmap, QImage
 from PyQt6.QtCore import Qt, QTimer
 from sensor_msgs.msg import BatteryState, Image
 from std_msgs.msg import Float32MultiArray, String
-from tello_msgs.msg import ModeStatus
+from geometry_msgs.msg import Twist
+from tello_msgs.msg import ModeStatus, GameStatus
 
 import numpy as np
 from cv_bridge import CvBridge
@@ -21,7 +22,19 @@ class TelloGUI(Node, QWidget):
         self.video_feed = 0
 
         self.setWindowTitle("Tello Interface")
-        self.setGeometry(600, 500, 1000, 800)
+        self.setGeometry(400, 400, 1200, 800)
+
+
+
+        self.game_status_label = QLabel("Game Status")
+        self.game_status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.game_status_label.setStyleSheet("background-color: gray; color: white; border-radius: 5px; padding: 5px; font-size: 16px;")
+
+        left_layout = QVBoxLayout()
+        left_layout.addStretch(1)
+        left_layout.addWidget(self.game_status_label)
+        left_layout.addStretch(1)
+
 
         main_layout = QHBoxLayout()
 
@@ -29,7 +42,7 @@ class TelloGUI(Node, QWidget):
         self.video_label = QLabel()
         self.video_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        width, height = 500, 400
+        width, height = 600, 500
         black_image = np.zeros((height, width, 3), dtype=np.uint8)
         q_img = QImage(black_image.data, width, height, width * 3, QImage.Format.Format_RGB888)
         pixmap = QPixmap.fromImage(q_img)
@@ -38,6 +51,9 @@ class TelloGUI(Node, QWidget):
         video_layout.addWidget(self.video_label)
 
         right_layout = QVBoxLayout()
+        right_layout.setSpacing(20)
+        right_layout.setContentsMargins(10, 20, 10, 20)
+
         self.current_mode_label = QLabel("Current Mode: Default")
         self.current_mode_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
@@ -49,6 +65,9 @@ class TelloGUI(Node, QWidget):
 
         self.battery_label = QLabel("Battery: %")
         self.battery_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        self.tello_speed_label = QLabel("Tello Speed: Default")
+        self.tello_speed_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.mpu_label = QLabel("MPU Values")
         self.mpu_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -67,19 +86,23 @@ class TelloGUI(Node, QWidget):
 
         self.emotion_label = QLabel("Detected Emotion")
         self.emotion_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.emotion_label.setStyleSheet("background-color: gray; color: white; border-radius: 5px; padding: 5px; font-size: 16px;")
 
         right_layout.addStretch(1)  
         right_layout.addWidget(self.current_mode_label)
         right_layout.addWidget(self.emotion_enabled_label)
         right_layout.addWidget(self.game_mode_label)
         right_layout.addWidget(self.battery_label)
+        right_layout.addWidget(self.tello_speed_label)
         right_layout.addWidget(self.mpu_label)
         right_layout.addWidget(self.flying_status_label)
         right_layout.addWidget(self.emotion_label)
         right_layout.addStretch(1)
  
+        main_layout.addLayout(left_layout)
         main_layout.addLayout(video_layout)
         main_layout.addLayout(right_layout)
+        main_layout.setStretchFactor(left_layout, 1)
         main_layout.setStretchFactor(video_layout, 3)
         main_layout.setStretchFactor(right_layout, 1)
         
@@ -92,10 +115,31 @@ class TelloGUI(Node, QWidget):
         self.inclinometer_sub = self.create_subscription(Float32MultiArray, '/esp32/inclinometer', self.update_mpu, 10)
         self.emotion_sub = self.create_subscription(String, '/detected_emotion', self.update_emotions, 10)
         self.emotion_enabled_sub = self.create_subscription(ModeStatus, '/control_mode_status', self.update_mode, 10)
+        self.cmd_vel_sub = self.create_subscription(Twist, '/cmd_vel', self.update_tello_speed, 10)
+        self.game_status_sub = self.create_subscription(GameStatus, '/game/status', self.update_game_status, 10)
 
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.ros_spin)
         self.timer.start(16)
+
+    def update_tello_speed(self, msg):
+        """ Update tello speed display """
+        linear_x = msg.linear.x
+        linear_y = msg.linear.y
+        linear_z = msg.linear.z
+        angular_x = msg.angular.x
+        angular_y = msg.angular.y
+        angular_z = msg.angular.z
+
+        self.tello_speed_label.setText(
+            f"Speed:\n"
+            f"Linear X: {linear_x:.2f}\n"
+            f"Linear Y: {linear_y:.2f}\n"
+            f"Linear Z: {linear_z:.2f}\n"
+            f"Angular X: {angular_x:.2f}\n"
+            f"Angular Y: {angular_y:.2f}\n"
+            f"Angular Z: {angular_z:.2f}"
+        )
 
     def update_mode(self, msg):
         """ Update current mode display """
@@ -180,11 +224,39 @@ class TelloGUI(Node, QWidget):
         pixmap = QPixmap.fromImage(q_img)
         self.video_label.setPixmap(pixmap)
 
-
     def update_emotions(self, msg):
-        """ Update detected emotions"""
+        """ Update detected emotions with dynamic styling """
         current_emotion = msg.data
         self.emotion_label.setText(f"Current Emotion: {current_emotion}")
+
+        emotion_colors = {
+            "Angry": "#ff4c4c",      # Red
+            "Disgust": "#66cc66",    # Green
+            "Fear": "#8c52ff",       # Purple
+            "Happy": "#ffd700",      # Gold
+            "Neutral": "#666666",    # Gray
+            "Sad": "#3399ff",        # Blue
+            "Surprise": "#ff9900"    # Orange
+        }
+
+        bg_color = emotion_colors.get(current_emotion, "#000000")
+        self.emotion_label.setStyleSheet(f"""
+            background-color: {bg_color};
+            color: white;
+            border-radius: 5px;
+            padding: 10px;
+            font-size: 16px;
+            font-weight: bold;
+        """)
+
+    def update_game_status(self, msg):
+        """ Update game status display """
+        game_info = (
+            f"Score: {msg.score}\n"
+            f"Ammo: {msg.magazine}/10\n"
+            f"Targets: {msg.alive_targets} alive, {msg.hit_targets} hit"
+        )
+        self.game_status_label.setText(game_info)
 
     def ros_spin(self):
         """ Process ROS2 events """

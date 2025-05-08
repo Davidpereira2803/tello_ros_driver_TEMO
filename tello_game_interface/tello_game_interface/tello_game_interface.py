@@ -8,7 +8,7 @@ from cv_bridge import CvBridge
 import numpy as np
 import time
 import pygame
-from tello_msgs.msg import PS4Buttons, Game
+from tello_msgs.msg import PS4Buttons, Game, GameStatus, ModeStatus
 
 from playsound import playsound
 
@@ -20,17 +20,20 @@ class TelloGame(Node):
         self.subscription = self.create_subscription(Image, '/camera/image_raw', self.image_callback, 10)
         self.ps4_btn_sub = self.create_subscription(PS4Buttons, '/ps4_btn', self.ps4_button_callback, 10)
         self.trigger_state_sub = self.create_subscription(Game, '/trigger_state', self.update_trigger_state, 10)
+        self.control_mode_status_sub = self.create_subscription(ModeStatus, '/control_mode_status', self.update_mode, 10)
 
         self.alive_targets = set()
         self.score = 0
         self.magazine = 10
         self.shoot_pressed = False 
         self.reload_pressed = False
+        self.game_mode = "GAMEOFF"
 
         self.dictionary = aruco.getPredefinedDictionary(aruco.DICT_4X4_50)
         self.parameters = aruco.DetectorParameters()
 
         self.camera_pub = self.create_publisher(Image, '/camera/game_image', 10)
+        self.game_status_pub = self.create_publisher(GameStatus, '/game/status', 10)
 
     def image_callback(self, msg):
         frame = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
@@ -73,8 +76,8 @@ class TelloGame(Node):
                         hit_positions.append(enemy_center)
                         self.score += 1
                         self.get_logger().info(f"Target hit!") 
-                        self.magazine -= 1
 
+            self.magazine -= 1
             self.shoot_pressed = False
 
         elif self.magazine == 0 and self.shoot_pressed:
@@ -85,7 +88,6 @@ class TelloGame(Node):
             self.magazine = 10
             self.get_logger().info(f"Reloading!")
 
-            
         
         cv2.drawMarker(frame, center_screen, (0, 0, 255), markerType=cv2.MARKER_CROSS, markerSize=25, thickness=2)
 
@@ -94,10 +96,35 @@ class TelloGame(Node):
         ros_image.header.frame_id = "tello_game"
         self.camera_pub.publish(ros_image)
 
+
+        game_status_msg = GameStatus()
+        game_status_msg.score = self.score
+        game_status_msg.magazine = self.magazine
+        game_status_msg.total_targets = len(self.alive_targets) + self.score
+        game_status_msg.alive_targets = len(self.alive_targets)
+        game_status_msg.hit_targets = self.score
+
+        self.game_status_pub.publish(game_status_msg)
+
+
     def ps4_button_callback(self, msg):
+        if self.game_mode == "GAMEOFF":
+            return
         self.shoot_pressed = msg.buttons[7] == 1 
         self.reload_pressed = msg.buttons[6] == 1
     
     def update_trigger_state(self, msg):
-        self.shoot_pressed = msg.trigger_state == 1
-        self.reload_pressed = msg.trigger_state == 2
+        if self.game_mode == "GAMEOFF":
+            return
+        self.shoot_pressed = msg.state == 1
+        self.reload_pressed = msg.state == 2
+
+    def update_mode(self, msg):
+        """
+        Update the mode based on the received message.
+        """
+        game_mode_map = {
+            0: "GAMEOFF",
+            1: "GAMEON"
+        }
+        self.game_mode = game_mode_map.get(msg.game_mode, "Unknown")

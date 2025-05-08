@@ -19,3 +19,6 @@ gnome-terminal -- bash -c "source /opt/ros/jazzy/setup.bash; source install/setu
 
 # Launch PS4 Driver T5
 gnome-terminal -- bash -c "source /opt/ros/jazzy/setup.bash; source install/setup.bash; ros2 launch ps4_driver ps4_driver.launch.py; exec bash"
+
+# Launch Game Logic T6
+gnome-terminal -- bash -c "source /opt/ros/jazzy/setup.bash; source install/setup.bash; ros2 launch tello_game_interface tello_game.launch.py; exec bash"
