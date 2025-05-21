@@ -9,8 +9,11 @@ import numpy as np
 import time
 import pygame
 from tello_msgs.msg import PS4Buttons, Game, GameStatus, ModeStatus
+import threading
 
+import speech_recognition as sr
 from playsound import playsound
+
 
 class TelloGame(Node):
     def __init__(self):
@@ -60,7 +63,9 @@ class TelloGame(Node):
                 cv2.circle(frame, enemy_center, 20, (0, 204, 255), -1)
 
         if self.shoot_pressed and self.magazine > 0:
-            playsound('/home/david/Projects/TEMO_ros_ws/src/tello_ros_driver_TEMO/sound/gun.wav')
+            #playsound('/home/david/Projects/TEMO_ros_ws/src/tello_ros_driver_TEMO/sound/gun.wav')
+            threading.Thread(target=playsound, args=('/home/david/Projects/TEMO_ros_ws/src/tello_ros_driver_TEMO/sound/gun.wav',), daemon=True).start()
+
             if ids is not None:
                 for corner, marker_id in zip(corners, ids):
                     if marker_id not in self.alive_targets:
@@ -84,7 +89,10 @@ class TelloGame(Node):
             self.get_logger().info(f"Reload!")
 
         if self.reload_pressed and self.magazine < 10:
-            playsound('/home/david/Projects/TEMO_ros_ws/src/tello_ros_driver_TEMO/sound/reload.wav')
+            #playsound('/home/david/Projects/TEMO_ros_ws/src/tello_ros_driver_TEMO/sound/reload.wav')
+
+            threading.Thread(target=playsound, args=('/home/david/Projects/TEMO_ros_ws/src/tello_ros_driver_TEMO/sound/reload.wav',), daemon=True).start()
+
             self.magazine = 10
             self.get_logger().info(f"Reloading!")
 
@@ -112,12 +120,14 @@ class TelloGame(Node):
             return
         self.shoot_pressed = msg.buttons[7] == 1 
         self.reload_pressed = msg.buttons[6] == 1
+        #self.get_logger().info("PS4 shoot")
     
     def update_trigger_state(self, msg):
         if self.game_mode == "GAMEOFF":
             return
         self.shoot_pressed = msg.state == 1
         self.reload_pressed = msg.state == 2
+        #self.get_logger().info("Shoot")
 
     def update_mode(self, msg):
         """
