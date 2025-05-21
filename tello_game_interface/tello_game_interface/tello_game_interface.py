@@ -11,7 +11,10 @@ import pygame
 from tello_msgs.msg import PS4Buttons, Game, GameStatus, ModeStatus
 import threading
 
-import speech_recognition as sr
+from vosk import Model, KaldiRecognizer
+import sounddevice as sd
+import queue
+import json
 from playsound import playsound
 
 
@@ -25,6 +28,9 @@ class TelloGame(Node):
         self.trigger_state_sub = self.create_subscription(Game, '/trigger_state', self.update_trigger_state, 10)
         self.control_mode_status_sub = self.create_subscription(ModeStatus, '/control_mode_status', self.update_mode, 10)
 
+        self.vosk_model = Model("/home/david/Projects/TEMO_ros_ws/src/tello_ros_driver_TEMO/vosk-model-small-en-us-0.15")
+        self.recognizer = KaldiRecognizer(self.vosk_model, 16000)
+
         self.alive_targets = set()
         self.score = 0
         self.magazine = 10
@@ -37,6 +43,10 @@ class TelloGame(Node):
 
         self.camera_pub = self.create_publisher(Image, '/camera/game_image', 10)
         self.game_status_pub = self.create_publisher(GameStatus, '/game/status', 10)
+
+        self.audio_thread = threading.Thread(target=self.listen_for_commands)
+        self.audio_thread.daemon = True
+        self.audio_thread.start()
 
     def image_callback(self, msg):
         frame = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
@@ -63,8 +73,9 @@ class TelloGame(Node):
                 cv2.circle(frame, enemy_center, 20, (0, 204, 255), -1)
 
         if self.shoot_pressed and self.magazine > 0:
-            #playsound('/home/david/Projects/TEMO_ros_ws/src/tello_ros_driver_TEMO/sound/gun.wav')
-            threading.Thread(target=playsound, args=('/home/david/Projects/TEMO_ros_ws/src/tello_ros_driver_TEMO/sound/gun.wav',), daemon=True).start()
+            playsound('/home/david/Projects/TEMO_ros_ws/src/tello_ros_driver_TEMO/sound/gun.wav')
+            self.get_logger().info("SHOOTING")
+
 
             if ids is not None:
                 for corner, marker_id in zip(corners, ids):
@@ -85,16 +96,17 @@ class TelloGame(Node):
             self.magazine -= 1
             self.shoot_pressed = False
 
-        elif self.magazine == 0 and self.shoot_pressed:
+        elif self.shoot_pressed:
             self.get_logger().info(f"Reload!")
 
         if self.reload_pressed and self.magazine < 10:
-            #playsound('/home/david/Projects/TEMO_ros_ws/src/tello_ros_driver_TEMO/sound/reload.wav')
+            playsound('/home/david/Projects/TEMO_ros_ws/src/tello_ros_driver_TEMO/sound/reload.wav')
 
-            threading.Thread(target=playsound, args=('/home/david/Projects/TEMO_ros_ws/src/tello_ros_driver_TEMO/sound/reload.wav',), daemon=True).start()
+            self.get_logger().info("RELOADING")
 
             self.magazine = 10
             self.get_logger().info(f"Reloading!")
+            self.reload_pressed = False
 
         
         cv2.drawMarker(frame, center_screen, (0, 0, 255), markerType=cv2.MARKER_CROSS, markerSize=25, thickness=2)
@@ -138,3 +150,34 @@ class TelloGame(Node):
             1: "GAMEON"
         }
         self.game_mode = game_mode_map.get(msg.game_mode, "Unknown")
+
+    def listen_for_commands(self):
+
+        q = queue.Queue()
+        def callback(indata, frames, time, status):
+            if status:
+                print(status)
+                self.get_logger().info(status)
+            q.put(bytes(indata))
+        
+        with sd.RawInputStream(samplerate=16000, blocksize=8000, dtype='int16',
+                            channels=1, callback=callback):
+            self.get_logger().info("Listening... (say 'shoot' or 'reload')")
+            print("Listening... (say 'shoot' or 'reload')")
+
+            while True:
+                data = q.get()
+                if self.recognizer.AcceptWaveform(data):
+                    result = json.loads(self.recognizer.Result())
+                    text = result.get("text", "")
+                    self.get_logger().info(f"You said: {text}") 
+                    print("You said:", text)
+
+                    if "shoot" in text and self.game_mode == "GAMEON":
+                        self.get_logger().info("SHOOT detected!")
+                        print("SHOOT detected!")
+                        self.shoot_pressed = True
+                    elif "reload" in text and self.game_mode == "GAMEON":
+                        self.get_logger().info("RELOAD detected!")
+                        print("RELOAD detected!")
+                        self.reload_pressed = True

@@ -1,37 +1,30 @@
-import speech_recognition as sr
-import time
+import sounddevice as sd
+import queue
+import json
+from vosk import Model, KaldiRecognizer
 
-def main():
-    recognizer = sr.Recognizer()
-    mic = sr.Microphone()
+model = Model("vosk-model-small-en-us-0.15")
+recognizer = KaldiRecognizer(model, 16000)
 
-    with mic as source:
-        recognizer.adjust_for_ambient_noise(source)
-        print("Voice command test ready. Say 'shoot' or 'reload'...")
+q = queue.Queue()
+
+def callback(indata, frames, time, status):
+    if status:
+        print(status)
+    q.put(bytes(indata))
+
+with sd.RawInputStream(samplerate=16000, blocksize=8000, dtype='int16',
+                       channels=1, callback=callback):
+    print("Listening... (say 'shoot' or 'reload')")
 
     while True:
-        with mic as source:
-            try:
-                print("Listening...")
-                audio = recognizer.listen(source, timeout=5)
-                command = recognizer.recognize_google(audio).lower()
-                print(f"You said: {command}")
+        data = q.get()
+        if recognizer.AcceptWaveform(data):
+            result = json.loads(recognizer.Result())
+            text = result.get("text", "")
+            print("You said:", text)
 
-                if "shoot" in command:
-                    print("SHOOT command recognized!")
-                elif "reload" in command:
-                    print("RELOAD command recognized!")
-                else:
-                    print("Unknown command")
-
-                time.sleep(1)
-
-            except sr.WaitTimeoutError:
-                print("Timeout: No speech detected.")
-            except sr.UnknownValueError:
-                print("Could not understand audio.")
-            except sr.RequestError as e:
-                print(f"Speech recognition error: {e}")
-
-if __name__ == "__main__":
-    main()
+            if "shoot" in text:
+                print("SHOOT detected!")
+            elif "reload" in text:
+                print("RELOAD detected!")
