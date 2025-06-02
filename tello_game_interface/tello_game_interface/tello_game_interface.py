@@ -31,6 +31,10 @@ class TelloGame(Node):
         self.vosk_model = Model("/home/david/Projects/TEMO_ros_ws/src/tello_ros_driver_TEMO/vosk-model-small-en-us-0.15")
         self.recognizer = KaldiRecognizer(self.vosk_model, 16000)
 
+        self.alien_image = cv2.imread('/home/david/Projects/TEMO_ros_ws/src/tello_ros_driver_TEMO/images/alien.png', cv2.IMREAD_UNCHANGED)
+        self.dead_alien_image = cv2.imread('/home/david/Projects/TEMO_ros_ws/src/tello_ros_driver_TEMO/images/dead_alien.png', cv2.IMREAD_UNCHANGED)
+
+        self.dead_targets = set()
         self.alive_targets = set()
         self.score = 0
         self.magazine = 10
@@ -70,7 +74,19 @@ class TelloGame(Node):
                 c = corner[0]
                 center_x, center_y = c[:, 0].mean(), c[:, 1].mean()
                 enemy_center = (int(center_x), int(center_y))
-                cv2.circle(frame, enemy_center, 20, (0, 204, 255), -1)
+
+                s1 = np.linalg.norm(c[0] - c[1])
+                s2 = np.linalg.norm(c[1] - c[2])
+                s3 = np.linalg.norm(c[2] - c[3])
+                s4 = np.linalg.norm(c[3] - c[0])
+                marker_size = int(np.mean([s1, s2, s3, s4]))
+
+                resized_alien = cv2.resize(self.alien_image, (marker_size, marker_size), interpolation=cv2.INTER_AREA)
+
+                top_left_x = int(center_x - marker_size / 2)
+                top_left_y = int(center_y - marker_size / 2)
+
+                self.overlay_image_alpha(frame, resized_alien, top_left_x, top_left_y)
 
         if self.shoot_pressed and self.magazine > 0:
             playsound('/home/david/Projects/TEMO_ros_ws/src/tello_ros_driver_TEMO/sound/gun.wav')
@@ -78,6 +94,7 @@ class TelloGame(Node):
 
 
             if ids is not None:
+                ids = ids.flatten()
                 for corner, marker_id in zip(corners, ids):
                     if marker_id not in self.alive_targets:
                         continue
@@ -89,9 +106,10 @@ class TelloGame(Node):
 
                     if dist < 30:
                         self.alive_targets.remove(marker_id)
+                        self.dead_targets.add(marker_id)
                         hit_positions.append(enemy_center)
                         self.score += 1
-                        self.get_logger().info(f"Target hit!") 
+                        self.get_logger().info(f"Target hit!")                 
 
             self.magazine -= 1
             self.shoot_pressed = False
@@ -107,6 +125,23 @@ class TelloGame(Node):
             self.magazine = 10
             self.get_logger().info(f"Reloading!")
             self.reload_pressed = False
+
+        
+        if ids is not None:
+            for corner, marker_id in zip(corners, ids):
+                if marker_id in self.dead_targets:
+                    c = corner[0]
+                    center_x, center_y = c[:, 0].mean(), c[:, 1].mean()
+                    s1 = np.linalg.norm(c[0] - c[1])
+                    s2 = np.linalg.norm(c[1] - c[2])
+                    s3 = np.linalg.norm(c[2] - c[3])
+                    s4 = np.linalg.norm(c[3] - c[0])
+                    marker_size = int(np.mean([s1, s2, s3, s4]))
+
+                    resized_dead = cv2.resize(self.dead_alien_image, (marker_size, marker_size), interpolation=cv2.INTER_AREA)
+                    top_left_x = int(center_x - marker_size / 2)
+                    top_left_y = int(center_y - marker_size / 2)
+                    self.overlay_image_alpha(frame, resized_dead, top_left_x, top_left_y)
 
         
         cv2.drawMarker(frame, center_screen, (0, 0, 255), markerType=cv2.MARKER_CROSS, markerSize=25, thickness=2)
@@ -186,3 +221,40 @@ class TelloGame(Node):
                     elif "reload" in text and self.game_mode == "GAMEON":
                         self.get_logger().info("RELOAD detected!")
                         self.reload_pressed = True
+
+    def overlay_image_alpha(self, background, overlay, x, y):
+        """
+        Overlay an image with alpha channel onto a background image at specified coordinates.
+        """
+
+        bh, bw = background.shape[:2]
+        h, w = overlay.shape[:2]
+
+        if x < 0:
+            overlay = overlay[:, -x:]
+            w = overlay.shape[1]
+            x = 0
+        if y < 0:
+            overlay = overlay[-y:, :]
+            h = overlay.shape[0]
+            y = 0
+        if x + w > bw:
+            overlay = overlay[:, :bw - x]
+            w = overlay.shape[1]
+        if y + h > bh:
+            overlay = overlay[:bh - y, :]
+            h = overlay.shape[0]
+
+        if overlay.shape[2] != 4:
+            return
+
+        alpha_overlay = overlay[:, :, 3] / 255.0
+        alpha_background = 1.0 - alpha_overlay
+
+        for c in range(3):
+            background[y:y+h, x:x+w, c] = (
+                alpha_overlay * overlay[:, :, c] +
+                alpha_background * background[y:y+h, x:x+w, c]
+            )
+
+
