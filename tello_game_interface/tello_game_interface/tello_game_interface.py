@@ -6,7 +6,6 @@ import cv2
 import cv2.aruco as aruco
 from cv_bridge import CvBridge
 import numpy as np
-import time
 import pygame
 from tello_msgs.msg import PS4Buttons, Game, GameStatus, ModeStatus
 import threading
@@ -15,8 +14,6 @@ from vosk import Model, KaldiRecognizer
 import sounddevice as sd
 import queue
 import json
-from playsound import playsound
-
 
 class TelloGame(Node):
     def __init__(self):
@@ -34,6 +31,12 @@ class TelloGame(Node):
         self.alien_image = cv2.imread('/home/david/Projects/TEMO_ros_ws/src/tello_ros_driver_TEMO/images/alien.png', cv2.IMREAD_UNCHANGED)
         self.dead_alien_image = cv2.imread('/home/david/Projects/TEMO_ros_ws/src/tello_ros_driver_TEMO/images/dead_alien.png', cv2.IMREAD_UNCHANGED)
 
+        pygame.init()
+        pygame.mixer.init()
+        self.gun_sound = pygame.mixer.Sound('/home/david/Projects/TEMO_ros_ws/src/tello_ros_driver_TEMO/sound/gun.wav')
+        self.reload_sound = pygame.mixer.Sound('/home/david/Projects/TEMO_ros_ws/src/tello_ros_driver_TEMO/sound/reload.wav')
+
+
         self.dead_targets = set()
         self.alive_targets = set()
         self.score = 0
@@ -41,6 +44,9 @@ class TelloGame(Node):
         self.shoot_pressed = False 
         self.reload_pressed = False
         self.game_mode = "GAMEOFF"
+
+        self.prev_shoot_button = False
+        self.prev_reload_button = False
 
         self.dictionary = aruco.getPredefinedDictionary(aruco.DICT_4X4_50)
         self.parameters = aruco.DetectorParameters()
@@ -88,8 +94,9 @@ class TelloGame(Node):
 
                 self.overlay_image_alpha(frame, resized_alien, top_left_x, top_left_y)
 
-        if self.shoot_pressed and self.magazine > 0:
-            playsound('/home/david/Projects/TEMO_ros_ws/src/tello_ros_driver_TEMO/sound/gun.wav')
+        if self.shoot_pressed and not self.prev_shoot_button and self.magazine > 0:
+            self.gun_sound.play()
+            
             self.get_logger().info("SHOOTING")
 
 
@@ -117,15 +124,17 @@ class TelloGame(Node):
         elif self.shoot_pressed:
             self.get_logger().info(f"Reload!")
 
-        if self.reload_pressed and self.magazine < 10:
-            playsound('/home/david/Projects/TEMO_ros_ws/src/tello_ros_driver_TEMO/sound/reload.wav')
+        if self.reload_pressed and self.prev_reload_button and self.magazine < 10:
+            self.reload_sound.play()
 
             self.get_logger().info("RELOADING")
 
             self.magazine = 10
             self.get_logger().info(f"Reloading!")
             self.reload_pressed = False
-
+        
+        self.prev_shoot_button = self.shoot_pressed
+        self.prev_reload_button = self.reload_pressed
         
         if ids is not None:
             for corner, marker_id in zip(corners, ids):
@@ -168,7 +177,8 @@ class TelloGame(Node):
         """
         if self.game_mode == "GAMEOFF":
             return
-        self.shoot_pressed = msg.buttons[7] == 1 
+
+        self.shoot_pressed = msg.buttons[7] == 1
         self.reload_pressed = msg.buttons[6] == 1
         #self.get_logger().info("PS4 shoot")
     
