@@ -128,6 +128,9 @@ class TelloGame(Node):
 
 
     def ps4_button_callback(self, msg):
+        """
+        Callback function to handle PS4 button presses.
+        """
         if self.game_mode == "GAMEOFF":
             return
         self.shoot_pressed = msg.buttons[7] == 1 
@@ -135,6 +138,9 @@ class TelloGame(Node):
         #self.get_logger().info("PS4 shoot")
     
     def update_trigger_state(self, msg):
+        """
+        Update the shoot and reload states based on the received message.
+        """
         if self.game_mode == "GAMEOFF":
             return
         self.shoot_pressed = msg.state == 1
@@ -152,18 +158,20 @@ class TelloGame(Node):
         self.game_mode = game_mode_map.get(msg.game_mode, "Unknown")
 
     def listen_for_commands(self):
+        """
+        Listen for voice commands using Vosk and sounddevice.
+        Commands: "shoot" and "reload"
+        """
 
         q = queue.Queue()
         def callback(indata, frames, time, status):
             if status:
-                print(status)
                 self.get_logger().info(status)
             q.put(bytes(indata))
         
         with sd.RawInputStream(samplerate=16000, blocksize=8000, dtype='int16',
                             channels=1, callback=callback):
             self.get_logger().info("Listening... (say 'shoot' or 'reload')")
-            print("Listening... (say 'shoot' or 'reload')")
 
             while True:
                 data = q.get()
@@ -171,13 +179,10 @@ class TelloGame(Node):
                     result = json.loads(self.recognizer.Result())
                     text = result.get("text", "")
                     self.get_logger().info(f"You said: {text}") 
-                    print("You said:", text)
 
                     if "shoot" in text and self.game_mode == "GAMEON":
                         self.get_logger().info("SHOOT detected!")
-                        print("SHOOT detected!")
                         self.shoot_pressed = True
                     elif "reload" in text and self.game_mode == "GAMEON":
                         self.get_logger().info("RELOAD detected!")
-                        print("RELOAD detected!")
                         self.reload_pressed = True
