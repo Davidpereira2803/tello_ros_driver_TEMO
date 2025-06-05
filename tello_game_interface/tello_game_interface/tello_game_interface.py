@@ -252,23 +252,6 @@ class TelloGame(Node):
         self.game_mode = new_game_mode
         self.ps4_on = mode_map.get(msg.mode, "Unknown") == "PS4"
 
-    def log_game_session(self):
-        if self.game_start_time and self.game_end_time:
-            with open('/home/david/Projects/TEMO_ros_ws/src/tello_ros_driver_TEMO/game_log.csv', 'a', newline='') as csvfile:
-                accuracy = 100 * self.score / self.total_shots_fired if self.total_shots_fired > 0 else 0
-                writer = csv.writer(csvfile)
-                writer.writerow(["Game Start Time", int(self.game_start_time)])
-                writer.writerow(["Game End Time", int(self.game_end_time)])
-                writer.writerow(["Score", self.score])
-                writer.writerow(["Duration (seconds)", int(self.game_end_time - self.game_start_time)])
-                writer.writerow(["Total Shots Fired", self.total_shots_fired])
-                writer.writerow(["Accuracy %",f"{accuracy:.2f}"])
-                writer.writerow(["Hit Timestamps"] + self.hit_timestamps)
-                writer.writerow([])
-            
-            self.hit_timestamps = []
-            self.total_shots_fired = 0
-
     def listen_for_commands(self):
         """
         Listen for voice commands using Vosk and sounddevice.
@@ -334,4 +317,19 @@ class TelloGame(Node):
                 alpha_background * background[y:y+h, x:x+w, c]
             )
 
-
+    def log_game_session(self):
+        if self.game_start_time and self.game_end_time:
+            with open('/home/david/Projects/TEMO_ros_ws/src/tello_ros_driver_TEMO/game_logs/game_log.csv', 'a', newline='') as csvfile:
+                accuracy = 100 * self.score / self.total_shots_fired if self.total_shots_fired > 0 else 0
+                writer = csv.writer(csvfile)
+                writer.writerow(["Game Start Time", int(self.game_start_time)])
+                writer.writerow(["Game End Time", int(self.game_end_time)])
+                writer.writerow(["Score", self.score])
+                writer.writerow(["Duration (seconds)", int(self.game_end_time - self.game_start_time)])
+                writer.writerow(["Total Shots Fired", self.total_shots_fired])
+                writer.writerow(["Accuracy %",f"{accuracy:.2f}"])
+                writer.writerow(["Hit Timestamps"] + self.hit_timestamps)
+                writer.writerow([])
+            
+            self.hit_timestamps = []
+            self.total_shots_fired = 0
