@@ -261,9 +261,9 @@ class Controller(Node):
 
         if self.ps4controller:
             #self.get_logger().info(f"Received ps4 command: {msg}") 
-            self.key_pressed["th"] = msg.linear.z * self.speed
+            self.key_pressed["th"] = msg.linear.x * self.speed
             self.key_pressed["right"] = msg.linear.y * self.speed
-            self.key_pressed["forward"] = msg.linear.x * self.speed
+            self.key_pressed["forward"] = msg.linear.z * self.speed
             self.key_pressed["cw"] = msg.angular.z * self.speed
 
     def ps4_btn_callback(self, msg):
