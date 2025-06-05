@@ -14,6 +14,8 @@ from vosk import Model, KaldiRecognizer
 import sounddevice as sd
 import queue
 import json
+from datetime import datetime
+import csv
 
 class TelloGame(Node):
     def __init__(self):
@@ -44,6 +46,11 @@ class TelloGame(Node):
         self.shoot_pressed = False 
         self.reload_pressed = False
         self.game_mode = "GAMEOFF"
+        self.ps4_on = False
+        self.game_start_time = None
+        self.game_end_time = None
+        self.total_shots_fired = 0
+        self.hit_timestamps = []
 
         self.prev_shoot_button = False
         self.prev_reload_button = False
@@ -62,6 +69,25 @@ class TelloGame(Node):
         frame = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         corners, ids, _ = aruco.detectMarkers(gray, self.dictionary, parameters=self.parameters)
+
+        remaining_time = 0
+        if self.game_mode == "GAMEON" and self.game_start_time:
+            elapsed_time = datetime.now().timestamp() - self.game_start_time
+            remaining_time = max(0, int(300 - elapsed_time))
+            minutes = remaining_time // 60
+            seconds = remaining_time % 60
+            formatted_time = f"{minutes:02}:{seconds:02}"
+            if elapsed_time >= 300:
+                self.get_logger().info("Timeout -- GAME OVER!")
+                self.game_end_time = datetime.now().timestamp()
+                self.log_game_session()
+                self.game_mode = "GAMEOFF"
+                self.game_start_time = None
+                return 
+
+        if self.ps4_on:
+            self.magazine = min(self.magazine, 1)
+
 
         h, w = frame.shape[:2]
         center_screen = (w // 2, h // 2)
@@ -99,7 +125,6 @@ class TelloGame(Node):
             
             self.get_logger().info("SHOOTING")
 
-
             if ids is not None:
                 ids = ids.flatten()
                 for corner, marker_id in zip(corners, ids):
@@ -116,9 +141,18 @@ class TelloGame(Node):
                         self.dead_targets.add(marker_id)
                         hit_positions.append(enemy_center)
                         self.score += 1
-                        self.get_logger().info(f"Target hit!")                 
+                        self.hit_timestamps.append(int(datetime.now().timestamp()))
+                        self.get_logger().info(f"Target hit!")   
 
+                        if len(self.dead_targets) >= 5:
+                            self.game_end_time = datetime.now().timestamp()
+                            self.log_game_session()
+                            self.game_mode = "GAMEOFF"
+                            self.game_start_time = None
+                            return
+              
             self.magazine -= 1
+            self.total_shots_fired += 1
             self.shoot_pressed = False
 
         elif self.shoot_pressed:
@@ -129,7 +163,7 @@ class TelloGame(Node):
 
             self.get_logger().info("RELOADING")
 
-            self.magazine = 10
+            self.magazine = 1 if self.ps4_on else 10
             self.get_logger().info(f"Reloading!")
             self.reload_pressed = False
         
@@ -167,6 +201,8 @@ class TelloGame(Node):
         game_status_msg.total_targets = len(self.alive_targets) + self.score
         game_status_msg.alive_targets = len(self.alive_targets)
         game_status_msg.hit_targets = self.score
+        game_status_msg.remaining_time = remaining_time
+        game_status_msg.formatted_time = formatted_time if self.game_mode == "GAMEON" else "00:00"
 
         self.game_status_pub.publish(game_status_msg)
 
@@ -175,9 +211,9 @@ class TelloGame(Node):
         """
         Callback function to handle PS4 button presses.
         """
-        if self.game_mode == "GAMEOFF":
+        if self.game_mode == "GAMEOFF" or not self.ps4_on:
             return
-
+        
         self.shoot_pressed = msg.buttons[7] == 1
         self.reload_pressed = msg.buttons[6] == 1
         #self.get_logger().info("PS4 shoot")
@@ -196,11 +232,42 @@ class TelloGame(Node):
         """
         Update the mode based on the received message.
         """
+        mode_map = {
+            0: "DEFAULT",
+            1: "MPU",
+            2: "PS4",
+            3: "PHONEIMU"
+        }
         game_mode_map = {
             0: "GAMEOFF",
             1: "GAMEON"
         }
-        self.game_mode = game_mode_map.get(msg.game_mode, "Unknown")
+
+        new_game_mode = game_mode_map.get(msg.game_mode, "Unknown")
+
+        if new_game_mode == "GAMEON" and self.game_mode != "GAMEON":
+            self.game_start_time = datetime.now().timestamp()
+            self.game_end_time = None
+
+        self.game_mode = new_game_mode
+        self.ps4_on = mode_map.get(msg.mode, "Unknown") == "PS4"
+
+    def log_game_session(self):
+        if self.game_start_time and self.game_end_time:
+            with open('/home/david/Projects/TEMO_ros_ws/src/tello_ros_driver_TEMO/game_log.csv', 'a', newline='') as csvfile:
+                accuracy = 100 * self.score / self.total_shots_fired if self.total_shots_fired > 0 else 0
+                writer = csv.writer(csvfile)
+                writer.writerow(["Game Start Time", int(self.game_start_time)])
+                writer.writerow(["Game End Time", int(self.game_end_time)])
+                writer.writerow(["Score", self.score])
+                writer.writerow(["Duration (seconds)", int(self.game_end_time - self.game_start_time)])
+                writer.writerow(["Total Shots Fired", self.total_shots_fired])
+                writer.writerow(["Accuracy %",f"{accuracy:.2f}"])
+                writer.writerow(["Hit Timestamps"] + self.hit_timestamps)
+                writer.writerow([])
+            
+            self.hit_timestamps = []
+            self.total_shots_fired = 0
 
     def listen_for_commands(self):
         """

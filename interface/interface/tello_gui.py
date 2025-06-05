@@ -251,10 +251,13 @@ class TelloGUI(Node, QWidget):
 
     def update_game_status(self, msg):
         """ Update game status display """
+        remaining_time = "Game Over" if msg.formatted_time == "00:00" else msg.formatted_time
+
         game_info = (
             f"Score: {msg.score}\n"
             f"Ammo: {msg.magazine}/10\n"
             f"Targets: {msg.alive_targets} alive, {msg.hit_targets} hit"
+            f"\nRemaining Time: {remaining_time}\n"
         )
         self.game_status_label.setText(game_info)
 

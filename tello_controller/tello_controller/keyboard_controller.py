@@ -417,8 +417,10 @@ class Controller(Node):
 
 
         if abs(left_right) < 0.2:
+            #plus 1
             left_right = 0.0
         if abs(forward_backward) < 0.2 or abs(forward_backward) > 0.85:
+            #plus 1
             forward_backward = 0.0
 
         if self.handmotion:
@@ -444,7 +446,7 @@ class Controller(Node):
 
                 # Happy
                 if self.happyperforming or (self.notperformed and (self.latest_emotion == "Happy")):
-                    #self.get_logger().info("Happy Front FLip!")
+                    self.get_logger().info("Happy Front FLip!")
                     msg = FlipControl()
                     msg.flip_forward = False
                     msg.flip_backward = True
