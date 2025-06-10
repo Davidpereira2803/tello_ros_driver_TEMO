@@ -287,6 +287,14 @@ class Controller(Node):
             if msg.buttons[1] == 1:
                 self._land_pub.publish(Empty())
 
+            if msg.buttons[2] == 1:
+                self.game_mode = "GAMEON"
+                self.set_control_mode("Default", self.emotionactive, self.game_mode)
+
+            if msg.buttons[3] == 1:
+                self.game_mode = "GAMEOFF"
+                self.set_control_mode("Default", self.emotionactive, self.game_mode)
+
             if msg.buttons[9] == 1:
                 self.ps4controller = False
                 self.set_control_mode("Default", self.emotionactive, self.game_mode)
