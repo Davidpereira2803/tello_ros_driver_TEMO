@@ -276,7 +276,7 @@ class Controller(Node):
                 if self.speed > 1:
                     self.speed = 1
             
-            if msg.buttons[6] == 1:
+            if msg.buttons[4] == 1:
                 self.speed -= 0.1
                 if self.speed < 0.1:
                     self.speed = 0.1
