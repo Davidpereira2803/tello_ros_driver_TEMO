@@ -72,6 +72,22 @@ Graphical Interface
 ```bash
 ros2 launch interface interface.launch.py
 ```
+
+PS4 Control Driver
+```bash
+ros2 launch ps4_driver ps4_driver.launch.py
+```
+
+Game Interface
+```bash
+ros2 launch tello_game_interface tello_game.launch.py
+```
+
+Smartphone IMU Driver
+```bash
+ros2 launch smartphone_inclinometer smartphone_inclinometer.launch.py
+```
+
 ---
 
 #### Build & Launch all together
