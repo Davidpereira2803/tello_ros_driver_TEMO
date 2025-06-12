@@ -102,10 +102,8 @@ class TelloGame(Node):
             for corner, marker_id in zip(corners, ids):
                 self.alive_targets.add(marker_id)
 
-                if marker_id not in self.alive_targets:
-                    continue
-
                 aruco.drawDetectedMarkers(frame, [corner])
+
                 c = corner[0]
                 center_x, center_y = c[:, 0].mean(), c[:, 1].mean()
                 enemy_center = (int(center_x), int(center_y))
@@ -116,12 +114,14 @@ class TelloGame(Node):
                 s4 = np.linalg.norm(c[3] - c[0])
                 marker_size = int(np.mean([s1, s2, s3, s4]))
 
-                resized_alien = cv2.resize(self.alien_image, (marker_size, marker_size), interpolation=cv2.INTER_AREA)
-
                 top_left_x = int(center_x - marker_size / 2)
                 top_left_y = int(center_y - marker_size / 2)
 
-                self.overlay_image_alpha(frame, resized_alien, top_left_x, top_left_y)
+                if marker_id in self.dead_targets:
+                    resized_img = cv2.resize(self.dead_alien_image, (marker_size, marker_size), interpolation=cv2.INTER_AREA)
+                else:
+                    resized_img = cv2.resize(self.alien_image, (marker_size, marker_size), interpolation=cv2.INTER_AREA)
+                self.overlay_image_alpha(frame, resized_img, top_left_x, top_left_y)
 
         if self.shoot_pressed and not self.prev_shoot_button and self.magazine > 0:
             self.gun_sound.play()
@@ -176,23 +176,6 @@ class TelloGame(Node):
         
         self.prev_shoot_button = self.shoot_pressed
         self.prev_reload_button = self.reload_pressed
-        
-        if ids is not None:
-            for corner, marker_id in zip(corners, ids):
-                if marker_id in self.dead_targets:
-                    c = corner[0]
-                    center_x, center_y = c[:, 0].mean(), c[:, 1].mean()
-                    s1 = np.linalg.norm(c[0] - c[1])
-                    s2 = np.linalg.norm(c[1] - c[2])
-                    s3 = np.linalg.norm(c[2] - c[3])
-                    s4 = np.linalg.norm(c[3] - c[0])
-                    marker_size = int(np.mean([s1, s2, s3, s4]))
-
-                    resized_dead = cv2.resize(self.dead_alien_image, (marker_size, marker_size), interpolation=cv2.INTER_AREA)
-                    top_left_x = int(center_x - marker_size / 2)
-                    top_left_y = int(center_y - marker_size / 2)
-                    self.overlay_image_alpha(frame, resized_dead, top_left_x, top_left_y)
-
         
         cv2.drawMarker(frame, center_screen, (0, 0, 255), markerType=cv2.MARKER_CROSS, markerSize=25, thickness=2)
 
@@ -253,7 +236,7 @@ class TelloGame(Node):
         new_game_mode = game_mode_map.get(msg.game_mode, "Unknown")
 
         if new_game_mode == "GAMEON" and self.game_mode != "GAMEON":
-            self.game_start_time = int(datetime.now().timestamp()*1000)
+            self.game_start_time = datetime.now().timestamp()
             self.game_end_time = None
 
         self.game_mode = new_game_mode
@@ -327,12 +310,12 @@ class TelloGame(Node):
     def log_game_session(self):
         if self.game_start_time and self.game_end_time:
             timestamp = int(self.game_end_time)
-            date_str = datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d')
+            date_str = datetime.fromtimestamp(timestamp / 1000).strftime('%Y-%m-%d')
             filename = f'/home/david/Projects/TEMO_ros_ws/src/tello_ros_driver_TEMO/game_logs/game_log_{date_str}_{timestamp}.csv'
 
             events = []
 
-            events.append(("Game_Start_Time", int(self.game_start_time)))
+            events.append(("Game_Start_Time", int(self.game_start_time*1000)))
 
             for hit in self.hit_timestamps:
                 events.append(("Target_Hit", f"ID {hit['id']} at {int(hit['timestamp'])}"))
