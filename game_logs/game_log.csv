@@ -14,3 +14,8 @@ Total Shots Fired,2
 Accuracy %,0.00
 Hit Timestamps
 
+new file each game (name is the date and the time)
+log file convention
+prompt for nqme pid-DAYTIME
+remove duration
+chronological order
