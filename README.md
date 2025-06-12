@@ -7,10 +7,12 @@ This repository is a forked version of the Tello driver developped by the SNT-AR
 
 ## What is new?
 
-The project adds 2 new main functionalities:
-
 1. Facial emotion detection and reaction movements to each emotion
 2. Full drone control using an inclinometer module (MPU9250) paired with a microcontroller (ESP32)
+3. Full drone control using a PS4 controller
+4. Full drone control using a Smartphone IMU app ('HyperIMU')
+5. 'Hit All Targets' Game mode, the camera scans ArUco markers and aliens appear, with a centered crosshair one can shoot these aliens. 
+6. Graphical User Interface, including the live camera feed, battery percentage, MPU values, detected emotion labels, game stats...
 
 Emotion Recognition Model used: [GitHub Link](https://github.com/SHAIK-AFSANA/facialemotionrecognizerinrealtime)
 
