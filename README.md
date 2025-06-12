@@ -98,20 +98,29 @@ After launching everything there is a interface on which one can see the video f
 | `→`  | yaw right                   | rotates the drone right                 |
 | `z`  | increase speed              | increases the drone speed by 0.1        |
 | `x`  | decrease speed              | reduces the speed by 0.1                |
+| `c`  | calibrate | starts MPU calibration |
+| `space` | shoot | shoots one bullet in GAMEON mode|
+| `r`| reload | reloads the magazine in GAMEON mode|
 | `Shift + ↑`   | flip forward       | drone flips forward                     |
 | `Shift + ↓`   | flip backward      | drone flips backward                    |
 | `Shift + ←`   | flip left          | drone flips left                        |
 | `Shift + →`   | flip right         | drone flips right                       |
-| `1`  | happy movement              | drone performs happy movement           |
-| `2`  | sad movement                | drone performs sad movement             |
-| `3`  | angry movement              | drone performs angry movement           |
-| `4`  | surprised movement          | drone performs surprised movement       |
-| `5`  | fear movement               | drone performs fear movement            |
-| `6`  | disgust movement            | drone performs disgust movement         |
-| `7`  | activate emotion reaction   | enables emotion reaction mode           |
-| `8`  | deactivate emotion reaction | disables emotion reaction mode          |
-| `9`  | activate mpu control        | enables MPU control                     |
-| `0`  | deactivate mpu control      | disables MPU control                    |
+| `Shift + 1`  | happy movement              | drone performs happy movement           |
+| `Shift + 2`  | sad movement                | drone performs sad movement             |
+| `Shift + 3`  | angry movement              | drone performs angry movement           |
+| `Shift + 4`  | surprised movement          | drone performs surprised movement       |
+| `Shift + 5`  | fear movement               | drone performs fear movement            |
+| `Shift + 6`  | disgust movement            | drone performs disgust movement         |
+| `1`  | activate emotion reaction   | enables emotion reaction mode           |
+| `2`  | deactivate emotion reaction | disables emotion reaction mode          |
+| `3`  | activate MPU control        | enables MPU control                     |
+| `4`  | deactivate MPU control      | disables MPU control                    |
+| `5`  | activate PS4 control   | enables PS4 control           |
+| `6`  | deactivate PS4 control | disables PS4 control         |
+| `7`  | activate Smartphone IMU control   | enables Smartphone IMU control          |
+| `8`  | deactivate Smartphone IMU control | disables Smartphone IMU control         |
+| `9`  | activate Game mode (GAMEON)        | starts the game                   |
+| `0`  | deactivate Game mode (GAMEOFF)      | ends the game                   |
 
 **Note:**
 - Arrow keys (`↑`, `↓`, `←`, `→`) control altitude and yaw rotation.  
@@ -125,18 +134,18 @@ After launching everything there is a interface on which one can see the video f
 
 | Button/Joystick | Action                      |
 |-----------------|-----------------------------|
-| L3--Left Joystick   | Move up/down, left/right |
-| R3--Right Joystick  | Move forward/backward, yaw left/yaw right|
-| L2 | Reload |
-| R2 | Shoot |
-| L1 | Decrease Speed |
-| R1 | Increase Speed |
-| X Button        | Take off                    |
-| Circle Button   | Land                        |
-| Triangle Button | Set GAMEON   |
-| Square Button   | Set GAMEOFF |
-| Options   | Activate Default Mode |
-| ↑ | Front Flip |
-| ↓ | Back Flip |
-| ← | Left Flip |
-| → | Right Flip |
+| `L3`--Left Joystick   | Move up/down, left/right |
+| `R3`--Right Joystick  | Move forward/backward, yaw left/yaw right|
+| `L2` | Reload |
+| `R2` | Shoot |
+| `L1` | Decrease Speed |
+| `R1` | Increase Speed |
+| `✕`         | Take off                    |
+| `○`   | Land                        |
+| `△`  | Set GAMEON   |
+| `□`   | Set GAMEOFF |
+| `Options`   | Activate Default Mode |
+| `↑` | Front Flip |
+| `↓` | Back Flip |
+| `←` | Left Flip |
+| `→` | Right Flip |
