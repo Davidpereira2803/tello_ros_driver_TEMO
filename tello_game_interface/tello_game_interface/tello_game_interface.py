@@ -47,10 +47,13 @@ class TelloGame(Node):
         self.reload_pressed = False
         self.game_mode = "GAMEOFF"
         self.ps4_on = False
+        # Game Logs Variables
         self.game_start_time = None
         self.game_end_time = None
         self.total_shots_fired = 0
         self.hit_timestamps = []
+        self.reload_timestamps = []
+        self.shoot_timestamps = []
 
         self.prev_shoot_button = False
         self.prev_reload_button = False
@@ -79,7 +82,7 @@ class TelloGame(Node):
             formatted_time = f"{minutes:02}:{seconds:02}"
             if elapsed_time >= 300:
                 self.get_logger().info("Timeout -- GAME OVER!")
-                self.game_end_time = datetime.now().timestamp()
+                self.game_end_time = int(datetime.now().timestamp() * 1000)
                 self.log_game_session()
                 self.game_mode = "GAMEOFF"
                 self.game_start_time = None
@@ -122,6 +125,12 @@ class TelloGame(Node):
 
         if self.shoot_pressed and not self.prev_shoot_button and self.magazine > 0:
             self.gun_sound.play()
+            self.shoot_pressed = False
+
+            self.magazine -= 1
+            self.total_shots_fired += 1
+
+            self.shoot_timestamps.append(int(datetime.now().timestamp() * 1000))
             
             self.get_logger().info("SHOOTING")
 
@@ -141,25 +150,23 @@ class TelloGame(Node):
                         self.dead_targets.add(marker_id)
                         hit_positions.append(enemy_center)
                         self.score += 1
-                        self.hit_timestamps.append(int(datetime.now().timestamp()))
-                        self.get_logger().info(f"Target hit!")   
+                        self.get_logger().info(f"Target hit!") 
+                        self.hit_timestamps.append({"id": marker_id,"timestamp": int(datetime.now().timestamp()*1000)})
 
-                        if len(self.dead_targets) >= 5:
-                            self.game_end_time = datetime.now().timestamp()
+                        if len(self.dead_targets) >= 3:
+                            self.game_end_time = int(datetime.now().timestamp())*1000
                             self.log_game_session()
                             self.game_mode = "GAMEOFF"
                             self.game_start_time = None
                             return
-              
-            self.magazine -= 1
-            self.total_shots_fired += 1
-            self.shoot_pressed = False
 
         elif self.shoot_pressed:
             self.get_logger().info(f"Reload!")
 
         if self.reload_pressed and self.prev_reload_button and self.magazine < 10:
             self.reload_sound.play()
+
+            self.reload_timestamps.append(int(datetime.now().timestamp()*1000))
 
             self.get_logger().info("RELOADING")
 
@@ -246,7 +253,7 @@ class TelloGame(Node):
         new_game_mode = game_mode_map.get(msg.game_mode, "Unknown")
 
         if new_game_mode == "GAMEON" and self.game_mode != "GAMEON":
-            self.game_start_time = datetime.now().timestamp()
+            self.game_start_time = int(datetime.now().timestamp()*1000)
             self.game_end_time = None
 
         self.game_mode = new_game_mode
@@ -319,17 +326,35 @@ class TelloGame(Node):
 
     def log_game_session(self):
         if self.game_start_time and self.game_end_time:
-            with open('/home/david/Projects/TEMO_ros_ws/src/tello_ros_driver_TEMO/game_logs/game_log.csv', 'a', newline='') as csvfile:
-                accuracy = 100 * self.score / self.total_shots_fired if self.total_shots_fired > 0 else 0
+            timestamp = int(self.game_end_time)
+            date_str = datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d')
+            filename = f'/home/david/Projects/TEMO_ros_ws/src/tello_ros_driver_TEMO/game_logs/game_log_{date_str}_{timestamp}.csv'
+
+            events = []
+
+            events.append(("Game_Start_Time", int(self.game_start_time)))
+
+            for hit in self.hit_timestamps:
+                events.append(("Target_Hit", f"ID {hit['id']} at {int(hit['timestamp'])}"))
+
+            for reload_time in self.reload_timestamps:
+                events.append(("Reload", int(reload_time)))
+
+            for shoot_time in self.shoot_timestamps:
+                events.append(("Shot_Fired", int(shoot_time)))
+
+            events.append(("Game_End_Time", int(self.game_end_time)))
+            events.append(("Score", self.score))
+            events.append(("Total_Shots_Fired", self.total_shots_fired))
+
+            with open(filename, 'w', newline='') as csvfile:
                 writer = csv.writer(csvfile)
-                writer.writerow(["Game Start Time", int(self.game_start_time)])
-                writer.writerow(["Game End Time", int(self.game_end_time)])
-                writer.writerow(["Score", self.score])
-                writer.writerow(["Duration (seconds)", int(self.game_end_time - self.game_start_time)])
-                writer.writerow(["Total Shots Fired", self.total_shots_fired])
-                writer.writerow(["Accuracy %",f"{accuracy:.2f}"])
-                writer.writerow(["Hit Timestamps"] + self.hit_timestamps)
-                writer.writerow([])
+                writer.writerow(["Event", "Details"])
+                for event, details in events:
+                    writer.writerow([event, details])
+
             
             self.hit_timestamps = []
+            self.reload_timestamps = []
+            self.shoot_timestamps = []
             self.total_shots_fired = 0
