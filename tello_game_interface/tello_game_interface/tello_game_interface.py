@@ -86,7 +86,7 @@ class TelloGame(Node):
                 self.log_game_session()
                 self.game_mode = "GAMEOFF"
                 self.game_start_time = None
-                return 
+                return
 
         if self.ps4_on:
             self.magazine = min(self.magazine, 1)
@@ -318,7 +318,7 @@ class TelloGame(Node):
             events.append(("Game_Start_Time", int(self.game_start_time*1000)))
 
             for hit in self.hit_timestamps:
-                events.append(("Target_Hit", f"ID {hit['id']} at {int(hit['timestamp'])}"))
+                events.append(("Target_Hit", int(hit['timestamp']), f"ID {hit['id']}"))
 
             for reload_time in self.reload_timestamps:
                 events.append(("Reload", int(reload_time)))
@@ -330,9 +330,11 @@ class TelloGame(Node):
             events.append(("Score", self.score))
             events.append(("Total_Shots_Fired", self.total_shots_fired))
 
+            events.sort(key=lambda e: e[1])
+
             with open(filename, 'w', newline='') as csvfile:
                 writer = csv.writer(csvfile)
-                writer.writerow(["Event", "Details"])
+                writer.writerow(["Event", "Timestamp", "Details"])
                 for event, details in events:
                     writer.writerow([event, details])
 
