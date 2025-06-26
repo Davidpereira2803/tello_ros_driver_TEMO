@@ -2,7 +2,7 @@
 
 git clone https://github.com/hanyazou/TelloPy.git tellopy
 cd tellopy
-pip install . --break-system-packages
+pip install .
 
 cd ..
 sudo rm -rf tellopy

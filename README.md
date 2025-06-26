@@ -1,169 +1,92 @@
 # Tello ROS2 Wrapper TEMO (Fork)
-(This is not the original README.md -> [View Original README](docs/ORIGINAL_README.md))
 
-## Introduction
 
-This repository is a forked version of the Tello driver developped by the SNT-ARG team, it adds an emotion recognition model to the driver, and drone reaction movements for 6 emotions. Furthermore, a graphical interface was developped to display the video feed and some sensory data, such as the battery status.
+## Pre-Introduction
 
-## What is new?
-
-1. Facial emotion detection and reaction movements to each emotion
-2. Full drone control using an inclinometer module (MPU9250) paired with a microcontroller (ESP32)
-3. Full drone control using a PS4 controller
-4. Full drone control using a Smartphone IMU app ('HyperIMU')
-5. 'Hit All Targets' Game mode, the camera scans ArUco markers and aliens appear, with a centered crosshair one can shoot these aliens. 
-6. Graphical User Interface, including the live camera feed, battery percentage, MPU values, detected emotion labels, game stats...
+This repository is a fork, and adds an emotion recognition model to the driver, and adds drone reaction movements for 6 emotions.
 
 Emotion Recognition Model used: [GitHub Link](https://github.com/SHAIK-AFSANA/facialemotionrecognizerinrealtime)
 
-## How to start and launch the project
+## Introduction
 
-### Build & Launch
+This ROS package enables the command of a DJI Tello drone using ROS2 command
+velocity, building a bridge between ROS and the `tellopy` Python library.
 
-Create a ROS2 environment and clone this repository into the `src`folder. Always stay in the root folder of the ROS2 environment for the next steps.
+> **Note:** It's important to install `tellopy` from source,
+> as the pip version is outdated. The `install_tellopy.sh` script in this
+> repository can be used for this purpose.
 
-#### Manually launch one by one
+## ROS Messages
 
-Install ROS2, then source the environment
-```bash
-source /opt/ros/jazzy/setup.bash
-```
-Create a ROS workspace
-```bash
-mkdir -p ~/TEMO_ROS/src
-```
+- **`FlightStats.msg`**: Contains flight statistics and data from the drone.
+- **`FlipControl.msg`**: Used to control flip actions of the drone.
 
-```bash
-cd ~/TEMO_ROS/src
-```
+## ROS Topics
 
-```bash
-git clone https://github.com/Davidpereira2803/tello_ros_driver_TEMO.git
+### Subscribed Topics
 
-cd ..
-```
-Next build the app
-```bash
-colcon build
-```
+| Topic Name          | Message Type                 | Description                                      |
+| ------------------- | ---------------------------- | ------------------------------------------------ |
+| `/camera/exposure`  | `std_msgs/msg/Int32`         | Sets camera exposure. _(Valid values: 0, 1, 2)_  |
+| `/cmd_vel`          | `geometry_msgs/msg/Twist`    | Command velocity for drone movement.             |
+| `/flip`             | `tello_msgs/msg/FlipControl` | Controls flips of the drone.                     |
+| `/land`             | `std_msgs/msg/Empty`         | Triggers drone landing.                          |
+| `/takeoff`          | `std_msgs/msg/Empty`         | Triggers drone takeoff.                          |
+| `/palm_land`        | `std_msgs/msg/Empty`         | Activates palm landing feature.                  |
+| `/set_att_limit`    | `std_msgs/msg/Int32`         | Sets altitude limit for the drone. _(in meters)_ |
+| `/throw_and_go`     | `std_msgs/msg/Empty`         | Activates throw and go feature.                  |
+| `/toggle_fast_mode` | `std_msgs/msg/Empty`         | Toggles the drone's fast mode.                   |
 
-and source the build
+### Published Topics
 
-```bash
-source install/setup.bash
-```
+| Topic Name          | Message Type                 | Description                                                            |
+| ------------------- | ---------------------------- | ---------------------------------------------------------------------- |
+| `/camera/image_raw` | `sensor_msgs/msg/Image`      | Camera images from the drone.                                          |
+| `/flight_data`      | `tello_msgs/msg/FlightStats` | Flight data and statistics.                                            |
+| `/imu`              | `sensor_msgs/msg/Imu`        | IMU data of the drone.                                                 |
+| `/odom`             | `nav_msgs/msg/Odometry`      | Odometry information. _(It is very inacurate. Should be avoided)_ |
+| `/battery_state` | `sensor_msgs/BatteryState` | Battery State information. (Percentage is from 0-100%)
 
-Tello Driver
-```bash
-ros2 launch tello_driver tello_driver.launch.py
-```
+## ROS Parameters
 
-Keyboard Controller
-```bash
-ros2 launch tello_controller tello_controller.launch.py
-```
+Here are the configurable parameters for the `tello_ros_wrapper`:
 
-ESP32 + MPU9250 Controller
-```bash
-ros2 launch esp32_controller esp32.launch.py
-```
+### Topics
 
-Graphical Interface
-```bash
-ros2 launch interface interface.launch.py
-```
+| Parameter Name                | Default Value      | Description                             |
+| ----------------------------- | ------------------ | --------------------------------------- |
+| `image_topic_name`            | 'camera/image_raw' | Topic name for camera images.           |
+| `flight_data_topic_name`      | 'flight_data'      | Topic name for flight data.             |
+| `velocity_command_topic_name` | 'cmd_vel'          | Topic name for velocity commands.       |
+| `land_topic_name`             | 'land'             | Topic name for landing command.         |
+| `takeoff_topic_name`          | 'takeoff'          | Topic name for takeoff command.         |
+| `flip_control_topic_name`     | 'flip'             | Topic name for flip control.            |
+| `odom_topic_name`             | 'odom'             | Topic name for odometry data.           |
+| `imu_topic_name`              | 'imu'              | Topic name for IMU data.                |
+| `toggle_fast_mode_topic_name` | 'toggle_fast_mode' | Topic name for toggling fast mode.      |
+| `camera_exposure_topic_name`  | 'camera/exposure'  | Topic name for camera exposure control. |
 
-PS4 Control Driver
-```bash
-ros2 launch ps4_driver ps4_driver.launch.py
-```
+### Frame IDs
 
-Game Interface
-```bash
-ros2 launch tello_game_interface tello_game.launch.py
-```
+| Parameter Name   | Default Value | Description                 |
+| ---------------- | ------------- | --------------------------- |
+| `imu_frame_id`   | 'imu'         | Frame ID for IMU data.      |
+| `odom_frame_id`  | 'odom'        | Frame ID for odometry data. |
+| `drone_frame_id` | 'tello'       | Frame ID for the drone.     |
 
-Smartphone IMU Driver
-```bash
-ros2 launch smartphone_inclinometer smartphone_inclinometer.launch.py
-```
+### Wifi Setup
 
----
+| Parameter Name         | Default Value | Description                          |
+| ---------------------- | ------------- | ------------------------------------ |
+| `auto_wifi_connection` | false         | Automatically connect to Tello WiFi. |
+| `tello_ssid`           |               | SSID for Tello WiFi connection.      |
+| `tello_pw`             |               | Password for Tello WiFi.             |
 
-#### Build & Launch all together
+### Settings
 
-Be in the root folder of the ROS2 environment, and use this command: 
-```bash
-./src/tello_ros_driver_TEMO/launch_all.sh
-```
----
-
-### How to use it
-
-After launching everything there is a interface on which one can see the video feed and some data from the drone and the MPU-9250 sensor. After clicking on the interface, one can start using the keyboard by default to control the drone:
-
-| Key  | Action                      | Description                             |
-|------|-----------------------------|-----------------------------------------|
-| `t`  | take off                    | drone lifts off into the air            |
-| `l`  | land                        | drone lands safely                      |
-| `w`  | forward                     | moves the drone forward                 |
-| `s`  | backward                    | moves the drone backward                |
-| `a`  | left                        | moves the drone left                    |
-| `d`  | right                       | moves the drone right                   |
-| `↑`  | move up                     | increases altitude                      |
-| `↓`  | move down                   | decreases altitude                      |
-| `←`  | yaw left                    | rotates the drone left                  |
-| `→`  | yaw right                   | rotates the drone right                 |
-| `z`  | increase speed              | increases the drone speed by 0.1        |
-| `x`  | decrease speed              | reduces the speed by 0.1                |
-| `c`  | calibrate | starts MPU calibration |
-| `space` | shoot | shoots one bullet in GAMEON mode|
-| `r`| reload | reloads the magazine in GAMEON mode|
-| `Shift + ↑`   | flip forward       | drone flips forward                     |
-| `Shift + ↓`   | flip backward      | drone flips backward                    |
-| `Shift + ←`   | flip left          | drone flips left                        |
-| `Shift + →`   | flip right         | drone flips right                       |
-| `Shift + 1`  | happy movement              | drone performs happy movement           |
-| `Shift + 2`  | sad movement                | drone performs sad movement             |
-| `Shift + 3`  | angry movement              | drone performs angry movement           |
-| `Shift + 4`  | surprised movement          | drone performs surprised movement       |
-| `Shift + 5`  | fear movement               | drone performs fear movement            |
-| `Shift + 6`  | disgust movement            | drone performs disgust movement         |
-| `1`  | activate emotion reaction   | enables emotion reaction mode           |
-| `2`  | deactivate emotion reaction | disables emotion reaction mode          |
-| `3`  | activate MPU control        | enables MPU control                     |
-| `4`  | deactivate MPU control      | disables MPU control                    |
-| `5`  | activate PS4 control   | enables PS4 control           |
-| `6`  | deactivate PS4 control | disables PS4 control         |
-| `7`  | activate Smartphone IMU control   | enables Smartphone IMU control          |
-| `8`  | deactivate Smartphone IMU control | disables Smartphone IMU control         |
-| `9`  | activate Game mode (GAMEON)        | starts the game                   |
-| `0`  | deactivate Game mode (GAMEOFF)      | ends the game                   |
-
-**Note:**
-- Arrow keys (`↑`, `↓`, `←`, `→`) control altitude and yaw rotation.  
-- **Shift + Arrow Keys** trigger flips in the corresponding direction.  
-- Speed adjustments (`z`, `x`) modify the drone's speed gradually.
-
----
-
-### PS4 Controller Mappings
-
-
-| Button/Joystick | Action                      |
-|-----------------|-----------------------------|
-| `L3`--Left Joystick   | Move up/down, left/right |
-| `R3`--Right Joystick  | Move forward/backward, yaw left/yaw right|
-| `L2` | Reload |
-| `R2` | Shoot |
-| `L1` | Decrease Speed |
-| `R1` | Increase Speed |
-| `✕`         | Take off                    |
-| `○`   | Land                        |
-| `△`  | Set GAMEON   |
-| `□`   | Set GAMEOFF |
-| `Options`   | Activate Default Mode |
-| `↑` | Front Flip |
-| `↓` | Back Flip |
-| `←` | Left Flip |
-| `→` | Right Flip |
+| Parameter Name    | Default Value | Description                               |
+| ----------------- | ------------- | ----------------------------------------- |
+| `alt_limit`       | 30            | Altitude limit in meters.                 |
+| `fast_mode`       | false         | Enables fast mode for the drone.          |
+| `video_mode`      | '4:3'         | Sets video mode (options: '4:3', '16:9'). |
+| `camera_exposure` | 0             | Camera exposure level (0, 1, 2).          |
